@@ -41,11 +41,8 @@ import javax.inject.Singleton
 @Singleton
 class PrefsV2Impl @Inject internal constructor(@ApplicationContext context: Context) : PrefsV2 {
 
-    private val sharedPreferences: SharedPreferences
-
-    init {
-        sharedPreferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
-    }
+    private val sharedPreferences: SharedPreferences =
+        context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
 
     override val isFirstRun: Boolean
         get() = sharedPreferences.getBoolean(PREF_KEY_IS_FIRST_RUN, true)

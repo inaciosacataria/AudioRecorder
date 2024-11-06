@@ -26,6 +26,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import com.dimowner.audiorecorder.AppConstants
+import com.dimowner.audiorecorder.AppConstantsV2
 import com.dimowner.audiorecorder.R
 import com.dimowner.audiorecorder.v2.app.settings.convertToText
 import com.dimowner.audiorecorder.v2.data.model.BitRate
@@ -34,6 +36,124 @@ import com.dimowner.audiorecorder.v2.data.model.Record
 import com.dimowner.audiorecorder.v2.data.model.RecordingFormat
 import com.dimowner.audiorecorder.v2.data.model.SampleRate
 import java.util.Locale
+
+fun calculateScale(
+    mills: Long,
+    shortRecordDuration: Long = AppConstantsV2.SHORT_RECORD,
+    defaultWidthScale: Float = AppConstantsV2.DEFAULT_WIDTH_SCALE,
+): Float {
+    return when {
+        mills >= shortRecordDuration -> {
+            defaultWidthScale
+        }
+        else -> {
+            mills * (defaultWidthScale / shortRecordDuration)
+        }
+    }
+}
+
+@SuppressWarnings("MagicNumber")
+fun calculateGridStep(durationMills: Long): Long {
+    var actualStepSec = (durationMills / 1000) / AppConstants.GRID_LINES_COUNT
+    var k = 1
+    while (actualStepSec > 239) {
+        actualStepSec /= 2
+        k *= 2
+    }
+    //Ranges can be better optimised
+    val gridStep: Long = when (actualStepSec) {
+        in 0..2 -> 2000
+        in 3..6 -> 5000
+        in 7..14 -> 10000
+        in 15..24 -> 20000
+        in 25..44 -> 30000
+        in 45..74 -> 60000
+        in 75..104 -> 90000
+        in 105..149 -> 120000
+        in 150..209 -> 180000
+        in 210..269 -> 240000
+        in 270..329 -> 300000
+        in 330..419 -> 360000
+        in 420..539 -> 480000
+        in 540..659 -> 600000
+        in 660..809 -> 720000
+        in 810..1049 -> 900000
+        in 1050..1349 -> 1200000
+        in 1350..1649 -> 1500000
+        in 1650..2099 -> 1800000
+        in 2100..2699 -> 2400000
+        in 2700..3299 -> 3000000
+        in 3300..3899 -> 3600000
+        else -> 4200000
+    }
+    return gridStep * k
+}
+
+/**
+ * Called once when a new sound file is added
+ */
+@SuppressWarnings("MagicNumber")
+private fun adjustWaveformHeights(frameGains: IntArray, halfHeight: Int): IntArray {
+    val numFrames = frameGains.size
+
+    //Find the highest gain
+    var maxGain = 1.0f
+    for (i in 0 until numFrames) {
+        if (frameGains[i] > maxGain) {
+            maxGain = frameGains[i].toFloat()
+        }
+    }
+    // Make sure the range is no more than 0 - 255
+    var scaleFactor = 1.0f
+    if (maxGain > 255.0) {
+        scaleFactor = 255 / maxGain
+    }
+
+    // Build histogram of 256 bins and figure out the new scaled max
+    maxGain = 0.0f
+    val gainHist = IntArray(256)
+    for (i in 0 until numFrames) {
+        var smoothedGain = (frameGains[i] * scaleFactor).toInt()
+        if (smoothedGain < 0) smoothedGain = 0
+        if (smoothedGain > 255) smoothedGain = 255
+        if (smoothedGain > maxGain) maxGain = smoothedGain.toFloat()
+        gainHist[smoothedGain]++
+    }
+
+    // Re-calibrate the min to be 5%
+    var minGain = 0.0f
+    var sum = 0
+    while (minGain < 255 && sum < numFrames / 20) {
+        sum += gainHist[minGain.toInt()]
+        minGain++
+    }
+
+    // Re-calibrate the max to be 99%
+    sum = 0
+    while (maxGain > 2 && sum < numFrames / 100) {
+        sum += gainHist[maxGain.toInt()]
+        maxGain--
+    }
+
+    // Compute the heights
+    val heights = FloatArray(numFrames)
+    var range = maxGain - minGain
+    if (range <= 0) {
+        range = 1.0f
+    }
+    for (i in 0 until numFrames) {
+        var value = (frameGains[i] * scaleFactor - minGain) / range
+        if (value < 0.0) value = 0.0f
+        if (value > 1.0) value = 1.0f
+        heights[i] = value * value
+    }
+//    val halfHeight = viewHeightPx / 2 - textIndent.toInt() - 1
+    val waveformData = IntArray(numFrames)
+    for (i in 0 until numFrames) {
+        waveformData[i] = (heights[i] * halfHeight).toInt()
+    }
+    return waveformData
+}
 
 fun formatRecordingFormat(
     formatStrings: Array<String>,

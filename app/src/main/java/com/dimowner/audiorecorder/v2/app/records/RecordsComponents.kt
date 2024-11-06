@@ -200,13 +200,13 @@ fun RecordListItemView(
             .wrapContentHeight()
     ) {
         Column(
-            modifier = Modifier.wrapContentSize(),
+            modifier = Modifier.weight(1f),
             horizontalAlignment = Alignment.Start
         ) {
             Text(
                 modifier = Modifier
                     .padding(16.dp, 12.dp, 12.dp, 2.dp)
-                    .wrapContentWidth()
+                    .fillMaxWidth()
                     .wrapContentHeight(),
                 text = name,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -216,7 +216,7 @@ fun RecordListItemView(
             Text(
                 modifier = Modifier
                     .padding(16.dp, 2.dp, 12.dp, 12.dp)
-                    .wrapContentWidth()
+                    .fillMaxWidth()
                     .wrapContentHeight(),
                 text = details,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -229,11 +229,6 @@ fun RecordListItemView(
                 ),
             )
         }
-        Spacer(
-            modifier = Modifier
-                .wrapContentHeight()
-                .weight(1f)
-        )
         Column(
             modifier = Modifier
                 .wrapContentSize()
