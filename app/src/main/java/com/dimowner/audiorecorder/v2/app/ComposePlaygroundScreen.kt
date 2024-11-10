@@ -164,9 +164,9 @@ fun ComposePlaygroundScreen(
                         ChipItem(id = 5, value = SampleRate.SR48000, name = "48000", false),
                     ),
                     onSelect = {
-                        Timber.v("MY_TEST: onSelect = " + it.name)
+                        Timber.v("onSelect = " + it.name)
                     },
-                    onClickInfo = { Timber.v("MY_TEST: onClickInfo") }
+                    onClickInfo = { Timber.v("onClickInfo") }
                 )
                 // Buttons with different states
                 Button(

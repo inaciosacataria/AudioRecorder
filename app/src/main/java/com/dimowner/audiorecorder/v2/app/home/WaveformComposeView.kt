@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Canvas
@@ -21,6 +20,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -31,46 +31,16 @@ import com.dimowner.audiorecorder.v2.app.calculateGridStep
 import com.dimowner.audiorecorder.v2.app.calculateScale
 import timber.log.Timber
 
-data class WaveformState(
-    val durationMills: Long = 0L,
-    val playProgressMills: Long = 0L,
-    val waveformData: IntArray = intArrayOf(),
-    val showTimeline: Boolean = true,
-
-    /** 1 means that waveform will take whole view width. 2 means that waveform will take double view width to draw.  */
-    val widthScale: Float = 1.5f,
-    val durationSample: Int = 0,
-    val gridStepMills: Long = 4000,
-)
-
-data class WaveformViewState(
-    val GIRD_SUBLINE_HEIGHT: Float = AndroidUtils.dpToPx(12),
-    val PADD: Float = AndroidUtils.dpToPx(6),
-    val waveformShiftPx: Float = 0F,
-    val textHeight: Float = AndroidUtils.dpToPx(14),
-    val textIndent: Float = textHeight+PADD,
-
-    val drawLinesArray: FloatArray,
-    val durationPx: Float = 0F,
-    val millsPerPx: Float = 0F,
-    val pxPerMill: Float = 0F,
-    val pxPerSample: Float = 0F,
-    val samplePerPx: Float = 0F,
-)
-
-data class PaintState(
-    val waveformPaint: Paint = Paint(),
-    val linePaint: Paint = Paint(),
-    val gridPaint: Paint = Paint(),
-    val scrubberPaint: Paint = Paint(),
-    val textPaint: Paint = TextPaint(),
-)
+private val GIRD_SUBLINE_HEIGHT: Float = AndroidUtils.dpToPx(12)
+private val PADD: Float = AndroidUtils.dpToPx(6)
 
 @Composable
 fun WaveformComposeView(
     modifier: Modifier,
     state: WaveformState,
-    onStartSeek: () -> Unit,
+    onSeekStart: () -> Unit,
+    onSeekEnd: (mills: Long) -> Unit,
+    onSeekProgress: (mills: Long) -> Unit
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
@@ -117,8 +87,6 @@ fun WaveformComposeView(
         )
     }
 
-    val scope = rememberCoroutineScope()
-
     Canvas(modifier = modifier
         .onSizeChanged {
             val durationPx = it.width * state.widthScale
@@ -127,9 +95,13 @@ fun WaveformComposeView(
             val pxPerSample = durationPx / state.durationSample
             val samplePerPx = state.durationSample / durationPx
             val textHeight = with(density) { 14.sp.toPx() }
+            val waveformShiftPx = updateShift(
+                viewState.value, it,
+                -(state.playProgressMills * pxPerMill).toInt()+it.width/2
+            )
 
             viewState.value = viewState.value.copy(
-                waveformShiftPx = (it.width / 2).toFloat(),
+                waveformShiftPx = waveformShiftPx,
                 durationPx = durationPx,
                 millsPerPx = millsPerPx,
                 pxPerMill = pxPerMill,
@@ -142,34 +114,29 @@ fun WaveformComposeView(
         .pointerInput(Unit) {
             detectDragGestures(
                 onDragStart = {
-                    Timber.v("onDragStart offset: $it")
+                    onSeekStart()
                 },
                 onDrag = { change, dragAmount ->
-                    Timber.v("onPress change: $change amount: $dragAmount")
-                    var shift = viewState.value.waveformShiftPx + dragAmount.x
-                    val half = size.width/2
-                    if (shift <= -viewState.value.durationPx+half) {
-                        shift = -viewState.value.durationPx+half
-                    }
-                    if (shift > half) {
-                        shift = half.toFloat()
-                    }
+                    val shift = updateShift(
+                        viewState.value, size,
+                        (viewState.value.waveformShiftPx + dragAmount.x).toInt()
+                    )
+                    val half = size.width / 2
                     viewState.value = viewState.value.copy(
                         waveformShiftPx = shift
                     )
-                    Timber.v("waveformShiftPx: ${viewState.value.waveformShiftPx} shift: ${dragAmount.x}")
+                    onSeekProgress(((-shift + half) * viewState.value.millsPerPx).toLong())
+                    Timber.v("onDrag shift: $shift change: $change amount: $dragAmount")
                 },
                 onDragEnd = {
-                    Timber.v("onDragEnd")
+                    val shift = viewState.value.waveformShiftPx.toInt()
+                    val half = size.width / 2
+                    onSeekEnd(((-shift + half) * viewState.value.millsPerPx).toLong())
                 },
-                onDragCancel = {
-                    Timber.v("onDragCancel")
-                }
             )
         }
     ) {
         drawIntoCanvas { canvas ->
-            Timber.v("MY_TEST: onDraw: width = ${size.width} height= ${size.height}")
             drawGrid(canvas, size, viewState.value, state, paintState.value)
             drawWaveform(canvas, size, viewState.value, state, paintState.value)
             drawStartAndEnd(canvas, size, viewState.value, state, paintState.value)
@@ -242,13 +209,13 @@ private fun drawGrid(
                 xSubPos,
                 viewState.textIndent,
                 xSubPos,
-                viewState.GIRD_SUBLINE_HEIGHT + viewState.textIndent,
+                GIRD_SUBLINE_HEIGHT + viewState.textIndent,
                 paintState.gridPaint
             )
             //Draw grid bottom sub-line
             canvas.nativeCanvas.drawLine(
                 xSubPos,
-                size.height - viewState.GIRD_SUBLINE_HEIGHT - viewState.textIndent,
+                size.height - GIRD_SUBLINE_HEIGHT - viewState.textIndent,
                 xSubPos,
                 size.height - viewState.textIndent,
                 paintState.gridPaint
@@ -259,7 +226,7 @@ private fun drawGrid(
                 if (indexMills >= 0) {
                     val text = TimeUtils.formatTimeIntervalHourMin(indexMills)
                     //Bottom timeline text
-                    canvas.nativeCanvas.drawText(text, xPos, size.height - viewState.PADD, paintState.textPaint)
+                    canvas.nativeCanvas.drawText(text, xPos, size.height - PADD, paintState.textPaint)
                     //Top timeline text
                     canvas.nativeCanvas.drawText(text, xPos, viewState.textHeight, paintState.textPaint)
                 }
@@ -300,6 +267,22 @@ private fun drawWaveform(
     }
 }
 
+private fun updateShift(
+    viewState: WaveformViewState,
+    size: IntSize,
+    px: Int
+): Float {
+    var shift = px.toFloat()
+    val half = size.width/2
+    if (shift <= -viewState.durationPx+half) {
+        shift = -viewState.durationPx+half
+    }
+    if (shift > half) {
+        shift = half.toFloat()
+    }
+    return shift
+}
+
 @Preview(showBackground = true)
 @Composable
 fun WaveformComposeViewPreview() {
@@ -316,6 +299,99 @@ fun WaveformComposeViewPreview() {
             durationSample = waveformData.size,
             gridStepMills = calculateGridStep(durationMills)
         ),
-        onStartSeek = {}
+        onSeekStart = {},
+        onSeekProgress = { mills ->
+        },
+        onSeekEnd = { mills ->
+        }
     )
+}
+
+data class PaintState(
+    val waveformPaint: Paint = Paint(),
+    val linePaint: Paint = Paint(),
+    val gridPaint: Paint = Paint(),
+    val scrubberPaint: Paint = Paint(),
+    val textPaint: Paint = TextPaint(),
+)
+
+data class WaveformViewState(
+    val waveformShiftPx: Float = 0F,
+    val textHeight: Float = AndroidUtils.dpToPx(14),
+    val textIndent: Float = textHeight + PADD,
+
+    val drawLinesArray: FloatArray,
+    val durationPx: Float = 0F,
+    val millsPerPx: Float = 0F,
+    val pxPerMill: Float = 0F,
+    val pxPerSample: Float = 0F,
+    val samplePerPx: Float = 0F,
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is WaveformViewState) return false
+
+        if (waveformShiftPx != other.waveformShiftPx) return false
+        if (textHeight != other.textHeight) return false
+        if (textIndent != other.textIndent) return false
+        if (!drawLinesArray.contentEquals(other.drawLinesArray)) return false
+        if (durationPx != other.durationPx) return false
+        if (millsPerPx != other.millsPerPx) return false
+        if (pxPerMill != other.pxPerMill) return false
+        if (pxPerSample != other.pxPerSample) return false
+        if (samplePerPx != other.samplePerPx) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = waveformShiftPx.hashCode()
+        result = 31 * result + textHeight.hashCode()
+        result = 31 * result + textIndent.hashCode()
+        result = 31 * result + drawLinesArray.contentHashCode()
+        result = 31 * result + durationPx.hashCode()
+        result = 31 * result + millsPerPx.hashCode()
+        result = 31 * result + pxPerMill.hashCode()
+        result = 31 * result + pxPerSample.hashCode()
+        result = 31 * result + samplePerPx.hashCode()
+        return result
+    }
+}
+
+data class WaveformState(
+    val durationMills: Long = 0L,
+    val playProgressMills: Long = 0L,
+    val waveformData: IntArray = intArrayOf(),
+    val showTimeline: Boolean = true,
+
+    /** 1 means that waveform will take whole view width. 2 means that waveform will take double view width to draw.  */
+    val widthScale: Float = 1.5f,
+    val durationSample: Int = 0,
+    val gridStepMills: Long = 4000,
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is WaveformState) return false
+
+        if (durationMills != other.durationMills) return false
+        if (playProgressMills != other.playProgressMills) return false
+        if (!waveformData.contentEquals(other.waveformData)) return false
+        if (showTimeline != other.showTimeline) return false
+        if (widthScale != other.widthScale) return false
+        if (durationSample != other.durationSample) return false
+        if (gridStepMills != other.gridStepMills) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = durationMills.hashCode()
+        result = 31 * result + playProgressMills.hashCode()
+        result = 31 * result + waveformData.contentHashCode()
+        result = 31 * result + showTimeline.hashCode()
+        result = 31 * result + widthScale.hashCode()
+        result = 31 * result + durationSample
+        result = 31 * result + gridStepMills.hashCode()
+        return result
+    }
 }

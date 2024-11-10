@@ -93,7 +93,7 @@ fun calculateGridStep(durationMills: Long): Long {
  * Called once when a new sound file is added
  */
 @SuppressWarnings("MagicNumber")
-private fun adjustWaveformHeights(frameGains: IntArray, halfHeight: Int): IntArray {
+fun adjustWaveformHeights(frameGains: IntArray, halfHeight: Int): IntArray {
     val numFrames = frameGains.size
 
     //Find the highest gain

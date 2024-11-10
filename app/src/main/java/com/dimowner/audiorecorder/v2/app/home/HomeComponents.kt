@@ -136,6 +136,74 @@ fun TopAppBarPreview() {
 }
 
 @Composable
+fun PlaybackPanel(
+    modifier: Modifier,
+    showStop: Boolean,
+    showPause: Boolean,
+    onPlayClick: () -> Unit,
+    onStopClick: () -> Unit,
+    onPauseClick: () -> Unit,
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        FilledIconButton(
+            onClick = if (showPause) onPauseClick else onPlayClick,
+            modifier = Modifier
+                .size(42.dp)
+                .align(Alignment.CenterVertically),
+            colors = IconButtonDefaults.filledIconButtonColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface
+            )
+        ) {
+            val imageResourceId = if (showPause) {
+                R.drawable.ic_pause
+            } else {
+                R.drawable.ic_play
+            }
+            Icon(
+                painter = painterResource(id = imageResourceId),
+                contentDescription = stringResource(id = R.string.btn_play),
+            )
+        }
+        if (showStop) {
+            Spacer(modifier = Modifier.size(8.dp))
+            FilledIconButton(
+                onClick = onStopClick,
+                modifier = Modifier
+                    .size(42.dp)
+                    .align(Alignment.CenterVertically),
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                )
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_stop),
+                    contentDescription = stringResource(id = R.string.button_stop),
+                )
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PlaybackPanelPreview() {
+    PlaybackPanel(
+        modifier = Modifier.wrapContentSize().padding(8.dp, 8.dp),
+        showPause = false,
+        showStop = true,
+        onPlayClick = {},
+        onStopClick = {},
+        onPauseClick = {},
+    )
+}
+
+@Composable
 fun BottomBar(
     onSettingsClick: () -> Unit,
     onRecordsListClick: () -> Unit,
@@ -250,7 +318,9 @@ fun TimePanel(
     recordDuration: String,
     timeStart: String,
     timeEnd: String,
+    progress: Float,
     onRenameClick: () -> Unit,
+    onProgressChange: (Float) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -311,8 +381,8 @@ fun TimePanel(
             )
         }
         Slider(
-            value = 0.5f,
-            onValueChange = {},
+            value = progress,
+            onValueChange = onProgressChange,
         )
     }
 }
@@ -320,5 +390,15 @@ fun TimePanel(
 @Preview(showBackground = true)
 @Composable
 fun TimePanelPreview() {
-    TimePanel("Record-14", "1.2Mb, M4a, 44.1kHz", "02:23","00:00", "05:32", {})
+    TimePanel(
+        "Record-14",
+        "1.2Mb, M4a, " +
+                "44.1kHz",
+        "02:23",
+        "00:00",
+        "05:32",
+        0.3f,
+        onRenameClick = {},
+        onProgressChange = { prgress ->},
+    )
 }
