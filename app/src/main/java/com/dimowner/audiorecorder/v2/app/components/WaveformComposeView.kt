@@ -1,4 +1,4 @@
-package com.dimowner.audiorecorder.v2.app.home
+package com.dimowner.audiorecorder.v2.app.components
 
 import android.graphics.Paint
 import android.graphics.Typeface

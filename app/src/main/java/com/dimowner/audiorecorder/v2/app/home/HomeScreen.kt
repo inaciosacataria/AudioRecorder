@@ -41,6 +41,8 @@ import com.dimowner.audiorecorder.v2.app.RenameAlertDialog
 import com.dimowner.audiorecorder.v2.app.SaveAsDialog
 import com.dimowner.audiorecorder.v2.app.calculateGridStep
 import com.dimowner.audiorecorder.v2.app.calculateScale
+import com.dimowner.audiorecorder.v2.app.components.WaveformComposeView
+import com.dimowner.audiorecorder.v2.app.components.WaveformState
 import com.google.gson.Gson
 import timber.log.Timber
 

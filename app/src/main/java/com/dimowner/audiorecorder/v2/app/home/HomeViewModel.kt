@@ -16,11 +16,14 @@
 
 package com.dimowner.audiorecorder.v2.app.home
 
+import android.animation.TypeEvaluator
+import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
 import android.net.Uri
 import android.os.ParcelFileDescriptor
+import android.view.animation.DecelerateInterpolator
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.documentfile.provider.DocumentFile
@@ -39,6 +42,7 @@ import com.dimowner.audiorecorder.util.TimeUtils
 import com.dimowner.audiorecorder.v2.app.adjustWaveformHeights
 import com.dimowner.audiorecorder.v2.app.calculateGridStep
 import com.dimowner.audiorecorder.v2.app.calculateScale
+import com.dimowner.audiorecorder.v2.app.components.WaveformState
 import com.dimowner.audiorecorder.v2.app.info.RecordInfoState
 import com.dimowner.audiorecorder.v2.app.info.toRecordInfoState
 import com.dimowner.audiorecorder.v2.app.toInfoCombinedText
@@ -59,6 +63,8 @@ import timber.log.Timber
 import java.io.File
 import java.io.IOException
 import javax.inject.Inject
+
+private const val ANIMATION_DURATION = 330L //mills.
 
 @SuppressWarnings("LongParameterList")
 @HiltViewModel
@@ -90,13 +96,15 @@ internal class HomeViewModel @Inject constructor(
                 }
 
                 override fun onPlayProgress(mills: Long) {
-                    _state.value = _state.value.copy(
-                        waveformState = _state.value.waveformState.copy(
-                            playProgressMills = mills
-                        ),
-                        progress = mills/_state.value.waveformState.durationMills.toFloat(),
-                        time = TimeUtils.formatTimeIntervalHourMinSec2(mills),
-                    )
+                    if (!_state.value.isSeek) {
+                        _state.value = _state.value.copy(
+                            waveformState = _state.value.waveformState.copy(
+                                playProgressMills = mills
+                            ),
+                            progress = mills / _state.value.waveformState.durationMills.toFloat(),
+                            time = TimeUtils.formatTimeIntervalHourMinSec2(mills),
+                        )
+                    }
                 }
 
                 override fun onPausePlay() {
@@ -112,14 +120,10 @@ internal class HomeViewModel @Inject constructor(
 
                 override fun onStopPlay() {
                     _state.value = _state.value.copy(
-                        time = TimeUtils.formatTimeIntervalHourMinSec2(0),
-                        progress = 0F,
-                        waveformState = _state.value.waveformState.copy(
-                            playProgressMills = 0
-                        ),
                         showPause = false,
                         showStop = false
                     )
+                    moveToStart()
                 }
 
                 override fun onError(throwable: AppException) {
@@ -291,7 +295,9 @@ internal class HomeViewModel @Inject constructor(
     }
 
     fun handleSeekStart() {
-        Timber.v("handleSeekStart")
+        _state.value = _state.value.copy(
+            isSeek = true
+        )
     }
 
     fun handleSeekProgress(mills: Long) {
@@ -308,8 +314,9 @@ internal class HomeViewModel @Inject constructor(
         _state.value = _state.value.copy(
             time = TimeUtils.formatTimeIntervalHourMinSec2(mills),
             progress = mills/_state.value.waveformState.durationMills.toFloat(),
+            isSeek = false,
             waveformState = _state.value.waveformState.copy(
-                playProgressMills = mills
+                playProgressMills = mills,
             )
         )
         audioPlayer.seek(mills)
@@ -348,6 +355,21 @@ internal class HomeViewModel @Inject constructor(
 
     fun handleStopClick() {
         audioPlayer.stop()
+    }
+
+    fun moveToStart() {
+        val moveAnimator = ValueAnimator.ofObject(
+            LongEvaluator(),
+            _state.value.waveformState.playProgressMills,
+            0L
+        )
+        moveAnimator.interpolator = DecelerateInterpolator()
+        moveAnimator.duration = ANIMATION_DURATION
+        moveAnimator.addUpdateListener { animation: ValueAnimator ->
+            val moveValMills = animation.animatedValue as Long
+            handleSeekProgress(moveValMills)
+        }
+        moveAnimator.start()
     }
 
     fun onAction(action: HomeScreenAction) {
@@ -390,6 +412,7 @@ data class HomeScreenState(
     val isStopRecordingButtonAvailable: Boolean = false,
     val showPause: Boolean = false,
     val showStop: Boolean = false,
+    val isSeek: Boolean = false,
 )
 
 internal sealed class HomeScreenAction {
@@ -413,4 +436,10 @@ internal sealed class HomeScreenAction {
 sealed class HomeScreenEvent {
     data object ShowImportErrorError : HomeScreenEvent()
     data class RecordInformationEvent(val recordInfo: RecordInfoState) : HomeScreenEvent()
+}
+
+private class LongEvaluator : TypeEvaluator<Long> {
+    override fun evaluate(fraction: Float, startValue: Long, endValue: Long): Long {
+        return startValue + ((endValue - startValue) * fraction).toLong()
+    }
 }
