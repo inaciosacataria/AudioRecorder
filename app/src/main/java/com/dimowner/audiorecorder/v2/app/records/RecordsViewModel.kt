@@ -23,6 +23,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.dimowner.audiorecorder.app.DownloadService
+import com.dimowner.audiorecorder.audio.player.PlayerContractNew
 import com.dimowner.audiorecorder.util.AndroidUtils
 import com.dimowner.audiorecorder.util.TimeUtils
 import com.dimowner.audiorecorder.v2.app.info.RecordInfoState
@@ -48,10 +49,13 @@ import javax.inject.Inject
 internal class RecordsViewModel @Inject constructor(
     private val recordsDataSource: RecordsDataSource,
     private val prefs: PrefsV2,
+    private val audioPlayer: PlayerContractNew.Player,
     @MainDispatcher private val mainDispatcher: CoroutineDispatcher,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
-    @ApplicationContext context: Context
+    @ApplicationContext context: Context,
 ) : AndroidViewModel(context as Application) {
+
+    var onNewRecordSelected: (() -> Unit)? = null
 
     private val _state = mutableStateOf(RecordsScreenState())
     val state: State<RecordsScreenState> = _state
@@ -126,7 +130,9 @@ internal class RecordsViewModel @Inject constructor(
     }
 
     fun onItemSelect(recordId: Long) {
+        audioPlayer.stop()
         prefs.activeRecordId = recordId
+        onNewRecordSelected?.invoke()
     }
 
     fun updateListWithSortOrder(sortOrderId: SortDropDownMenuItemId) {
@@ -212,6 +218,7 @@ internal class RecordsViewModel @Inject constructor(
     }
 
     fun openRecordWithAnotherApp(recordId: Long) {
+        audioPlayer.stop()
         viewModelScope.launch(ioDispatcher) {
             val record = recordsDataSource.getRecord(recordId)
             if (record != null) {
@@ -268,6 +275,7 @@ internal class RecordsViewModel @Inject constructor(
     }
 
     fun moveRecordToRecycle(recordId: Long) {
+        audioPlayer.stop()
         viewModelScope.launch(ioDispatcher) {
             if (recordId != -1L && recordsDataSource.moveRecordToRecycle(recordId)) {
                 prefs.activeRecordId = -1

@@ -22,9 +22,11 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.lifecycleScope
 import com.dimowner.audiorecorder.v2.navigation.RecorderNavigationGraph
 import com.dimowner.audiorecorder.v2.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
 
 @AndroidEntryPoint
 class HomeActivity: ComponentActivity() {
@@ -34,15 +36,17 @@ class HomeActivity: ComponentActivity() {
         installSplashScreen()
         setContent {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                AppTheme(dynamicColors = true, darkTheme = true) { RecorderApp() }
+                AppTheme(dynamicColors = true, darkTheme = true) { RecorderApp(lifecycleScope) }
             } else {
-                AppTheme(darkTheme = true) { RecorderApp() }
+                AppTheme(darkTheme = true) { RecorderApp(lifecycleScope) }
             }
         }
     }
 
     @Composable
-    fun RecorderApp() {
-        RecorderNavigationGraph()
+    fun RecorderApp(
+        coroutineScope: CoroutineScope
+    ) {
+        RecorderNavigationGraph(coroutineScope)
     }
 }

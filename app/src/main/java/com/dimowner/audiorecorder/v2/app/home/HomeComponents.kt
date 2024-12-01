@@ -136,7 +136,7 @@ fun TopAppBarPreview() {
 }
 
 @Composable
-fun PlaybackPanel(
+fun PlayPanel(
     modifier: Modifier,
     showStop: Boolean,
     showPause: Boolean,
@@ -192,8 +192,8 @@ fun PlaybackPanel(
 
 @Preview(showBackground = true)
 @Composable
-fun PlaybackPanelPreview() {
-    PlaybackPanel(
+fun PlayPanelPreview() {
+    PlayPanel(
         modifier = Modifier.wrapContentSize().padding(8.dp, 8.dp),
         showPause = false,
         showStop = true,

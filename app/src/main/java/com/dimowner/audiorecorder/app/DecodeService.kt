@@ -64,12 +64,22 @@ class DecodeService : Service() {
 		const val ACTION_STOP_DECODING_SERVICE = "ACTION_STOP_DECODING_SERVICE"
 		const val ACTION_CANCEL_DECODE = "ACTION_CANCEL_DECODE"
 		const val EXTRAS_KEY_DECODE_INFO = "key_decode_info"
+		const val EXTRAS_KEY_DECODE_RECORD_DURATION = "key_decode_decode_record_duration"
+		const val EXTRAS_KEY_DECODE_RECORD_PATH = "key_decode_decode_record_path"
 		private const val NOTIF_ID = 104
 
 		fun startNotification(context: Context, recId: Int) {
 			val intent = Intent(context, DecodeService::class.java)
 			intent.action = ACTION_START_DECODING_SERVICE
 			intent.putExtra(EXTRAS_KEY_DECODE_INFO, recId)
+			context.startService(intent)
+		}
+
+		fun startNotificationV2(context: Context, path: String, durationMills: Long) {
+			val intent = Intent(context, DecodeService::class.java)
+			intent.action = ACTION_START_DECODING_SERVICE
+			intent.putExtra(EXTRAS_KEY_DECODE_RECORD_PATH, path)
+			intent.putExtra(EXTRAS_KEY_DECODE_RECORD_DURATION, durationMills)
 			context.startService(intent)
 		}
 	}
@@ -106,10 +116,18 @@ class DecodeService : Service() {
 			val action = intent.action
 			if (action != null && action.isNotEmpty()) {
 				when (action) {
-					ACTION_START_DECODING_SERVICE -> if (intent.hasExtra(EXTRAS_KEY_DECODE_INFO)) {
-						val id = intent.getIntExtra(EXTRAS_KEY_DECODE_INFO, -1)
-						if (id >= 0) {
-							startDecode(id)
+					ACTION_START_DECODING_SERVICE -> {
+						if (intent.hasExtra(EXTRAS_KEY_DECODE_RECORD_PATH)) {
+							val path = intent.getStringExtra(EXTRAS_KEY_DECODE_RECORD_PATH)
+							val duration = intent.getLongExtra(EXTRAS_KEY_DECODE_RECORD_DURATION, 0)
+							path?.let {
+								startDecodeV2(path, duration)
+							}
+						} else if (intent.hasExtra(EXTRAS_KEY_DECODE_INFO)) {
+							val id = intent.getIntExtra(EXTRAS_KEY_DECODE_INFO, -1)
+							if (id >= 0) {
+								startDecode(id)
+							}
 						}
 					}
 					ACTION_STOP_DECODING_SERVICE -> stopService()
@@ -149,7 +167,7 @@ class DecodeService : Service() {
 
 					override fun onProcessingCancel() {
 						Toast.makeText(applicationContext, R.string.processing_canceled, Toast.LENGTH_LONG).show()
-						decodeListener?.onFinishProcessing()
+						decodeListener?.onFinishProcessing(intArrayOf())
 						stopService()
 					}
 
@@ -175,14 +193,62 @@ class DecodeService : Service() {
 										data)
 								localRepository.updateRecord(decodedRecord)
 							}
-							decodeListener?.onFinishProcessing()
+							decodeListener?.onFinishProcessing(data)
 							stopService()
 						}
 					}
 
 					override fun onError(exception: Exception) {
 						Timber.e(exception)
-						decodeListener?.onFinishProcessing()
+						decodeListener?.onFinishProcessing(intArrayOf())
+						stopService()
+					}
+				})
+			} else {
+				stopService()
+			}
+		}
+	}
+
+	private fun startDecodeV2(path: String, durationMills: Long) {
+		isCancel = false
+		startNotification()
+		processingTasks.postRunnable {
+			var prevTime: Long = 0
+			if (durationMills < DECODE_DURATION) {
+				waveformVisualization.decodeRecordWaveform(path, object : AudioDecodingListener {
+					override fun isCanceled(): Boolean {
+						return isCancel
+					}
+
+					override fun onStartProcessing(duration: Long, channelsCount: Int, sampleRate: Int) {
+						decodeListener?.onStartProcessing()
+					}
+
+					override fun onProcessingProgress(percent: Int) {
+						val curTime = System.currentTimeMillis()
+						if (percent == 100 || curTime > prevTime + 200) {
+							updateNotification(percent)
+							prevTime = curTime
+						}
+					}
+
+					override fun onProcessingCancel() {
+						Toast.makeText(applicationContext, R.string.processing_canceled, Toast.LENGTH_LONG).show()
+						decodeListener?.onFinishProcessing(intArrayOf())
+						stopService()
+					}
+
+					override fun onFinishProcessing(data: IntArray, duration: Long) {
+						recordingsTasks.postRunnable {
+							decodeListener?.onFinishProcessing(data)
+							stopService()
+						}
+					}
+
+					override fun onError(exception: Exception) {
+						Timber.e(exception)
+						decodeListener?.onFinishProcessing(intArrayOf())
 						stopService()
 					}
 				})
@@ -347,5 +413,5 @@ class DecodeService : Service() {
 
 interface DecodeServiceListener {
 	fun onStartProcessing()
-	fun onFinishProcessing()
+	fun onFinishProcessing(decodedData: IntArray)
 }

@@ -31,11 +31,15 @@ import com.dimowner.audiorecorder.v2.app.settings.SettingsScreen
 import com.dimowner.audiorecorder.v2.app.settings.SettingsViewModel
 import com.dimowner.audiorecorder.v2.app.settings.WelcomeSetupSettingsScreen
 import com.dimowner.audiorecorder.v2.app.welcome.WelcomeScreen
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 private const val ANIMATION_DURATION = 120
 
 @Composable
-fun RecorderNavigationGraph() {
+fun RecorderNavigationGraph(
+    coroutineScope: CoroutineScope
+) {
     val navController = rememberNavController()
     NavHost(
         navController = navController,
@@ -84,7 +88,15 @@ fun RecorderNavigationGraph() {
         }
         composable(Routes.RECORDS_SCREEN) {
             val recordsViewModel: RecordsViewModel = hiltViewModel()
-            RecordsScreen(onPopBackStack = {
+            val homeViewModel: HomeViewModel = hiltViewModel()
+            recordsViewModel.onNewRecordSelected = {
+                coroutineScope.launch {
+                    homeViewModel.init()
+                    homeViewModel.handlePlayClick()
+                }
+            }
+            RecordsScreen(
+                onPopBackStack = {
                     navController.popBackStack()
                 },
                 showRecordInfoScreen = { json ->
@@ -93,7 +105,9 @@ fun RecorderNavigationGraph() {
                     navController.navigate(Routes.DELETED_RECORDS_SCREEN)
                 }, uiState = recordsViewModel.state.value,
                 event = recordsViewModel.event.collectAsState(null).value,
-                onAction = { recordsViewModel.onAction(it) }
+                onAction = { recordsViewModel.onAction(it) },
+                uiHomeState = homeViewModel.state.value,
+                onHomeAction = { homeViewModel.onAction(it) }
             )
         }
         composable(Routes.DELETED_RECORDS_SCREEN) {

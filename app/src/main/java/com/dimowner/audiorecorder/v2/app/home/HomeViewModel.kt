@@ -20,8 +20,12 @@ import android.animation.TypeEvaluator
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.Application
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
 import android.net.Uri
+import android.os.IBinder
 import android.os.ParcelFileDescriptor
 import android.view.animation.DecelerateInterpolator
 import androidx.compose.runtime.State
@@ -31,6 +35,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.dimowner.audiorecorder.ARApplication
 import com.dimowner.audiorecorder.R
+import com.dimowner.audiorecorder.app.DecodeService
+import com.dimowner.audiorecorder.app.DecodeServiceListener
 import com.dimowner.audiorecorder.app.DownloadService
 import com.dimowner.audiorecorder.audio.AudioDecoder
 import com.dimowner.audiorecorder.audio.player.PlayerContractNew
@@ -84,14 +90,45 @@ internal class HomeViewModel @Inject constructor(
     private val _event = MutableSharedFlow<HomeScreenEvent?>()
     val event: SharedFlow<HomeScreenEvent?> = _event
 
-    fun init() {
-        viewModelScope.launch(ioDispatcher) {
+    private val connection: ServiceConnection = object : ServiceConnection {
+        override fun onServiceConnected(className: ComponentName, service: IBinder) {
+            val binder = service as DecodeService.LocalBinder
+            val decodeService = binder.getService()
+            decodeService.setDecodeListener(object : DecodeServiceListener {
+                override fun onStartProcessing() {
+                    //Do nothing
+                }
+
+                override fun onFinishProcessing(decodedData: IntArray) {
+                    viewModelScope.launch(ioDispatcher) {
+                        //TODO: Handle the case when active racord has changed during decoding.
+                        recordsDataSource.getActiveRecord()?.let {
+                            recordsDataSource.updateRecord(it.copy(
+                                amps = decodedData
+                            ))
+                        }
+                    }
+                }
+            })
+        }
+
+        override fun onServiceDisconnected(arg0: ComponentName) {
+            //Do nothing
+        }
+
+        override fun onBindingDied(name: ComponentName) {
+            //Do nothing
+        }
+    }
+
+    suspend fun init() {
+        withContext(ioDispatcher) {
             updateState()
             audioPlayer.addPlayerCallback(callback = object : PlayerContractNew.PlayerCallback {
                 override fun onStartPlay() {
                     _state.value = _state.value.copy(
                         showPause = true,
-                        showStop = true
+                        showStop = true,
                     )
                 }
 
@@ -103,6 +140,8 @@ internal class HomeViewModel @Inject constructor(
                             ),
                             progress = mills / _state.value.waveformState.durationMills.toFloat(),
                             time = TimeUtils.formatTimeIntervalHourMinSec2(mills),
+                            showPause = true,
+                            showStop = true,
                         )
                     }
                 }
@@ -132,6 +171,10 @@ internal class HomeViewModel @Inject constructor(
                 }
             })
         }
+
+        val context: Context = getApplication<Application>().applicationContext
+        val intent = Intent(context, DecodeService::class.java)
+        context.bindService(intent, connection, Context.BIND_AUTO_CREATE)
     }
 
     private suspend fun updateState() {
@@ -198,9 +241,12 @@ internal class HomeViewModel @Inject constructor(
                             IntArray(ARApplication.longWaveformSampleCount),
                         )
                         val id = recordsDataSource.insertRecord(record)
-                        audioPlayer.stop()
+                        withContext(mainDispatcher) {
+                            audioPlayer.stop()
+                        }
                         prefs.activeRecordId = id
                         updateState()
+                        decodeRecord(record.path, record.durationMills)
                     }
                 } else {
                     //TODO: Show an error
@@ -217,6 +263,14 @@ internal class HomeViewModel @Inject constructor(
                 Timber.e(ex)
             }
         }
+    }
+
+    private fun decodeRecord(path: String, durationMills: Long) {
+        DecodeService.startNotificationV2(
+            getApplication<Application>().applicationContext,
+            path,
+            durationMills
+        )
     }
 
     fun shareActiveRecord() {
@@ -319,6 +373,12 @@ internal class HomeViewModel @Inject constructor(
                 playProgressMills = mills,
             )
         )
+        if (!audioPlayer.isPlaying()) {
+            _state.value = _state.value.copy(
+                showPause = false,
+                showStop = true
+            )
+        }
         audioPlayer.seek(mills)
     }
 
@@ -374,7 +434,7 @@ internal class HomeViewModel @Inject constructor(
 
     fun onAction(action: HomeScreenAction) {
         when (action) {
-            HomeScreenAction.InitHomeScreen -> init()
+            HomeScreenAction.InitHomeScreen -> viewModelScope.launch { init() }
             is HomeScreenAction.ImportAudioFile -> importAudioFile(action.uri)
             HomeScreenAction.ShareActiveRecord -> shareActiveRecord()
             HomeScreenAction.ShowActiveRecordInfo -> showActiveRecordInfo()

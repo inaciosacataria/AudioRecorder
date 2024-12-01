@@ -146,7 +146,7 @@ internal fun HomeScreen(
                     onAction(HomeScreenAction.OnSeekEnd(mills))
                 }
             )
-            PlaybackPanel(
+            PlayPanel(
                 modifier = Modifier.wrapContentHeight().fillMaxWidth().padding(8.dp, 8.dp),
                 showPause = uiState.showPause,
                 showStop = uiState.showStop,
