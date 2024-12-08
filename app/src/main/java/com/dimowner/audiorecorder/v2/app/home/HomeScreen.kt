@@ -136,6 +136,7 @@ internal fun HomeScreen(
                     .fillMaxWidth()
                     .height(180.dp),
                 state = uiState.waveformState,
+                showTimeline = true,
                 onSeekStart = {
                     onAction(HomeScreenAction.OnSeekStart)
                 },

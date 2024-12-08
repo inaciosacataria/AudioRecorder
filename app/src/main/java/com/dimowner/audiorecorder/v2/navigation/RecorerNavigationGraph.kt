@@ -38,7 +38,8 @@ private const val ANIMATION_DURATION = 120
 
 @Composable
 fun RecorderNavigationGraph(
-    coroutineScope: CoroutineScope
+    coroutineScope: CoroutineScope,
+    homeViewModel: HomeViewModel
 ) {
     val navController = rememberNavController()
     NavHost(
@@ -75,7 +76,6 @@ fun RecorderNavigationGraph(
             )
         }
         composable(Routes.HOME_SCREEN) {
-            val homeViewModel: HomeViewModel = hiltViewModel()
             HomeScreen(
                 showRecordsScreen = { navController.navigate(Routes.RECORDS_SCREEN) },
                 showSettingsScreen = { navController.navigate(Routes.SETTINGS_SCREEN) },
@@ -88,7 +88,6 @@ fun RecorderNavigationGraph(
         }
         composable(Routes.RECORDS_SCREEN) {
             val recordsViewModel: RecordsViewModel = hiltViewModel()
-            val homeViewModel: HomeViewModel = hiltViewModel()
             recordsViewModel.onNewRecordSelected = {
                 coroutineScope.launch {
                     homeViewModel.init()

@@ -7,6 +7,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -15,6 +16,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Canvas
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -38,6 +40,7 @@ private val PADD: Float = AndroidUtils.dpToPx(6)
 fun WaveformComposeView(
     modifier: Modifier,
     state: WaveformState,
+    showTimeline: Boolean,
     onSeekStart: () -> Unit,
     onSeekEnd: (mills: Long) -> Unit,
     onSeekProgress: (mills: Long) -> Unit
@@ -47,6 +50,10 @@ fun WaveformComposeView(
     val viewState = remember {
         mutableStateOf(WaveformViewState(drawLinesArray = floatArrayOf()))
     }
+    val waveformColor =  MaterialTheme.colorScheme.primary.toArgb()
+    val gridColor =  MaterialTheme.colorScheme.secondary.toArgb()
+    val lineColor =  MaterialTheme.colorScheme.inverseSurface.toArgb()
+    val textColor =  MaterialTheme.colorScheme.onSurfaceVariant.toArgb()
 
     val paintState = remember {
         mutableStateOf(
@@ -55,17 +62,18 @@ fun WaveformComposeView(
                     style = Paint.Style.STROKE
                     strokeWidth = 1.3f
                     isAntiAlias = true
-                    color = ContextCompat.getColor(context, R.color.dark_white)
+                    alpha = 255
+                    color = waveformColor
                 },
                 linePaint = Paint().apply {
                     style = Paint.Style.STROKE
                     strokeWidth = AndroidUtils.dpToPx(1.5f)
                     isAntiAlias = true
-                    color = ContextCompat.getColor(context, R.color.dark_white)
+                    color = lineColor
                 },
                 gridPaint = Paint().apply {
                     style = Paint.Style.STROKE
-                    color = ContextCompat.getColor(context, R.color.md_grey_100_75)
+                    color = gridColor
                     strokeWidth = AndroidUtils.dpToPx(1) / 2
                 },
                 scrubberPaint = Paint().apply {
@@ -79,7 +87,7 @@ fun WaveformComposeView(
                     strokeWidth = AndroidUtils.dpToPx(1f)
                     isAntiAlias = true
                     textAlign = Paint.Align.CENTER
-                    color = ContextCompat.getColor(context, R.color.dark_white)
+                    color = textColor
                     typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
                     textSize = viewState.value.textHeight
                 },
@@ -101,6 +109,7 @@ fun WaveformComposeView(
             )
 
             viewState.value = viewState.value.copy(
+                textIndent = if (showTimeline) textHeight + PADD else 0f,
                 waveformShiftPx = waveformShiftPx,
                 durationPx = durationPx,
                 millsPerPx = millsPerPx,
@@ -137,9 +146,9 @@ fun WaveformComposeView(
         }
     ) {
         drawIntoCanvas { canvas ->
-            drawGrid(canvas, size, viewState.value, state, paintState.value)
-            drawWaveform(canvas, size, viewState.value, state, paintState.value)
+            drawGrid(canvas, size, viewState.value, state, showTimeline, paintState.value)
             drawStartAndEnd(canvas, size, viewState.value, state, paintState.value)
+            drawWaveform(canvas, size, viewState.value, state, paintState.value)
             //Draw scrubber
             canvas.nativeCanvas.drawLine(
                 size.width / 2f,
@@ -148,7 +157,6 @@ fun WaveformComposeView(
                 size.height,
                 paintState.value.scrubberPaint
             )
-
         }
     }
 }
@@ -183,6 +191,7 @@ private fun drawGrid(
     size: Size,
     viewState: WaveformViewState,
     state: WaveformState,
+    showTimeline: Boolean,
     paintState: PaintState
 ) {
     val subStepPx = (state.gridStepMills / 2) * viewState.pxPerMill
@@ -221,7 +230,7 @@ private fun drawGrid(
                 paintState.gridPaint
             )
 
-            if (state.showTimeline) {
+            if (showTimeline) {
                 //Draw timeline texts
                 if (indexMills >= 0) {
                     val text = TimeUtils.formatTimeIntervalHourMin(indexMills)
@@ -299,6 +308,7 @@ fun WaveformComposeViewPreview() {
             durationSample = waveformData.size,
             gridStepMills = calculateGridStep(durationMills)
         ),
+        showTimeline = true,
         onSeekStart = {},
         onSeekProgress = { mills ->
         },
@@ -362,7 +372,6 @@ data class WaveformState(
     val durationMills: Long = 0L,
     val playProgressMills: Long = 0L,
     val waveformData: IntArray = intArrayOf(),
-    val showTimeline: Boolean = true,
 
     /** 1 means that waveform will take whole view width. 2 means that waveform will take double view width to draw.  */
     val widthScale: Float = 1.5f,
@@ -376,7 +385,6 @@ data class WaveformState(
         if (durationMills != other.durationMills) return false
         if (playProgressMills != other.playProgressMills) return false
         if (!waveformData.contentEquals(other.waveformData)) return false
-        if (showTimeline != other.showTimeline) return false
         if (widthScale != other.widthScale) return false
         if (durationSample != other.durationSample) return false
         if (gridStepMills != other.gridStepMills) return false
@@ -388,7 +396,6 @@ data class WaveformState(
         var result = durationMills.hashCode()
         result = 31 * result + playProgressMills.hashCode()
         result = 31 * result + waveformData.contentHashCode()
-        result = 31 * result + showTimeline.hashCode()
         result = 31 * result + widthScale.hashCode()
         result = 31 * result + durationSample
         result = 31 * result + gridStepMills.hashCode()

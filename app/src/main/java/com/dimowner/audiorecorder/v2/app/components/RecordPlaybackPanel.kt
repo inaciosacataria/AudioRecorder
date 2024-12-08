@@ -1,7 +1,5 @@
 package com.dimowner.audiorecorder.v2.app.components
 
-import androidx.compose.foundation.indication
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,38 +7,25 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredSizeIn
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dimowner.audiorecorder.v2.app.calculateGridStep
 import com.dimowner.audiorecorder.v2.app.calculateScale
 import com.dimowner.audiorecorder.v2.app.home.HomeScreenState
+import com.dimowner.audiorecorder.v2.app.home.LegacySlider
 import com.dimowner.audiorecorder.v2.app.home.PlayPanel
 
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun RecordPlaybackPanel(
     modifier: Modifier,
@@ -53,11 +38,6 @@ internal fun RecordPlaybackPanel(
     onStopClick: () -> Unit,
     onPauseClick: () -> Unit,
 ) {
-
-    val interactionSource = remember { MutableInteractionSource() }
-    val trackHeight = 4.dp
-    val thumbSize = DpSize(20.dp, 20.dp)
-
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -72,8 +52,9 @@ internal fun RecordPlaybackPanel(
             fontWeight = FontWeight.Bold
         )
         WaveformComposeView(
-            modifier = Modifier.fillMaxWidth().height(100.dp),
+            modifier = Modifier.fillMaxWidth().height(70.dp),
             state = uiState.waveformState,
+            showTimeline = false,
             onSeekStart = {
                 onSeekStart()
             },
@@ -84,17 +65,9 @@ internal fun RecordPlaybackPanel(
                 onSeekEnd(mills)
             }
         )
-        Text(
-            modifier = Modifier
-                .wrapContentSize()
-                .padding(0.dp, 0.dp, 0.dp, 4.dp),
-            textAlign = TextAlign.Center,
-            text = uiState.recordName,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Normal
-        )
-        Row {
+        Row(
+            verticalAlignment = Alignment.Bottom,
+        ) {
             Text(
                 modifier = Modifier
                     .wrapContentSize()
@@ -103,19 +76,18 @@ internal fun RecordPlaybackPanel(
                 text = uiState.startTime,
                 color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 16.sp,
-                fontWeight = FontWeight.Normal
+                fontWeight = FontWeight.Normal,
             )
-            Spacer(modifier = Modifier.weight(1f))
             Text(
                 modifier = Modifier
-                    .wrapContentSize(),
+                    .wrapContentHeight().weight(1f)
+                    .padding(8.dp, 6.dp, 8.dp, 0.dp),
                 textAlign = TextAlign.Center,
-                text = uiState.recordInfo,
+                text = uiState.recordName,
                 color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Light
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Normal
             )
-            Spacer(modifier = Modifier.weight(1f))
             Text(
                 modifier = Modifier
                     .wrapContentSize()
@@ -127,33 +99,9 @@ internal fun RecordPlaybackPanel(
                 fontWeight = FontWeight.Normal
             )
         }
-        Slider(
-            interactionSource = interactionSource,
-            modifier =
-            Modifier.semantics { contentDescription = "Localized Description" }
-                .requiredSizeIn(minWidth = thumbSize.width, minHeight = trackHeight).padding(8.dp, 0.dp),
-            value = uiState.progress,
-            onValueChange = { onProgressChange(it) },
-            thumb = {
-                val modifier =
-                    Modifier.size(thumbSize)
-                        .shadow(1.dp, CircleShape, clip = false)
-                        .indication(
-                            interactionSource = interactionSource,
-                            indication = ripple(bounded = false, radius = 20.dp)
-                        )
-                SliderDefaults.Thumb(interactionSource = interactionSource, modifier = modifier)
-            },
-            track = {
-                val modifier = Modifier.height(trackHeight)
-                SliderDefaults.Track(
-                    sliderState = it,
-                    modifier = modifier,
-                    thumbTrackGapSize = 0.dp,
-                    trackInsideCornerSize = 0.dp,
-                    drawStopIndicator = null
-                )
-            }
+        LegacySlider(
+            progress = uiState.progress,
+            onProgressChange = onProgressChange
         )
         PlayPanel(
             modifier = Modifier.wrapContentHeight().fillMaxWidth(),
@@ -163,6 +111,7 @@ internal fun RecordPlaybackPanel(
             onStopClick = { onStopClick() },
             onPauseClick = { onPauseClick() }
         )
+        Spacer(modifier = Modifier.height(12.dp))
     }
 }
 
@@ -186,7 +135,6 @@ fun PlaybackPanelPreview() {
                     waveformData = waveformData,
                     durationSample = waveformData.size,
                     gridStepMills = calculateGridStep(durationMills),
-                    showTimeline = false,
                 ),
                 startTime = "00:00",
                 endTime = "3:42",

@@ -74,7 +74,7 @@ private const val ANIMATION_DURATION = 330L //mills.
 
 @SuppressWarnings("LongParameterList")
 @HiltViewModel
-internal class HomeViewModel @Inject constructor(
+class HomeViewModel @Inject constructor(
     private val recordsDataSource: RecordsDataSource,
     private val fileDataSource: FileDataSource,
     private val prefs: PrefsV2,
@@ -475,7 +475,7 @@ data class HomeScreenState(
     val isSeek: Boolean = false,
 )
 
-internal sealed class HomeScreenAction {
+sealed class HomeScreenAction {
     data object InitHomeScreen : HomeScreenAction()
     data class ImportAudioFile(val uri: Uri) : HomeScreenAction()
     data object ShareActiveRecord : HomeScreenAction()

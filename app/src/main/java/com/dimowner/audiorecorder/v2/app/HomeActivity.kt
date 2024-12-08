@@ -20,9 +20,11 @@ import android.os.Build
 import androidx.activity.ComponentActivity
 import android.os.Bundle
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
+import com.dimowner.audiorecorder.v2.app.home.HomeViewModel
 import com.dimowner.audiorecorder.v2.navigation.RecorderNavigationGraph
 import com.dimowner.audiorecorder.v2.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -31,6 +33,8 @@ import kotlinx.coroutines.CoroutineScope
 @AndroidEntryPoint
 class HomeActivity: ComponentActivity() {
 
+    private val viewModel: HomeViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         installSplashScreen()
@@ -38,7 +42,7 @@ class HomeActivity: ComponentActivity() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 AppTheme(dynamicColors = true, darkTheme = true) { RecorderApp(lifecycleScope) }
             } else {
-                AppTheme(darkTheme = true) { RecorderApp(lifecycleScope) }
+                AppTheme(darkTheme = false) { RecorderApp(lifecycleScope) }
             }
         }
     }
@@ -47,6 +51,6 @@ class HomeActivity: ComponentActivity() {
     fun RecorderApp(
         coroutineScope: CoroutineScope
     ) {
-        RecorderNavigationGraph(coroutineScope)
+        RecorderNavigationGraph(coroutineScope, viewModel)
     }
 }

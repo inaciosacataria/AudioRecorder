@@ -68,10 +68,7 @@ internal fun RecordsScreen(
 
     val context = LocalContext.current
 
-    val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-
-    val isPanelVisible = remember { mutableStateOf(true) }
 
     ComposableLifecycle { _, event ->
         when (event) {
@@ -79,9 +76,6 @@ internal fun RecordsScreen(
                 Timber.d("SettingsScreen: On Start")
                 onAction(RecordsScreenAction.InitRecordsScreen)
                 onHomeAction(HomeScreenAction.InitHomeScreen)
-//                scope.launch {
-//                    snackbarHostState.showSnackbar("Snackbar")
-//                }
             }
             else -> {}
         }
@@ -171,7 +165,7 @@ internal fun RecordsScreen(
                         )
                     }
                 }
-                if (isPanelVisible.value) {
+                if (uiState.showRecordPlaybackPanel) {
                     RecordPlaybackPanel(
                         modifier = Modifier.fillMaxWidth().wrapContentHeight(),
                         uiState = uiHomeState,

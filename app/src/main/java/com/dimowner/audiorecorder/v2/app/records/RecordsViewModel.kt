@@ -24,6 +24,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.dimowner.audiorecorder.app.DownloadService
 import com.dimowner.audiorecorder.audio.player.PlayerContractNew
+import com.dimowner.audiorecorder.audio.player.PlayerContractNew.PlayerCallback
+import com.dimowner.audiorecorder.exception.AppException
 import com.dimowner.audiorecorder.util.AndroidUtils
 import com.dimowner.audiorecorder.util.TimeUtils
 import com.dimowner.audiorecorder.v2.app.info.RecordInfoState
@@ -67,6 +69,30 @@ internal class RecordsViewModel @Inject constructor(
         viewModelScope.launch(ioDispatcher) {
             initState()
         }
+        audioPlayer.addPlayerCallback(object : PlayerCallback {
+            override fun onStartPlay() {
+                _state.value = _state.value.copy(
+                    showRecordPlaybackPanel = true,
+                )
+            }
+            override fun onPlayProgress(mills: Long) {
+                //Do nothing
+            }
+            override fun onPausePlay() {
+                //Do nothing
+            }
+            override fun onSeek(mills: Long) {
+                //Do nothing
+            }
+            override fun onStopPlay() {
+                _state.value = _state.value.copy(
+                    showRecordPlaybackPanel = false,
+                )
+            }
+            override fun onError(throwable: AppException) {
+                //Do nothing
+            }
+        })
     }
 
     private suspend fun initState() {
@@ -83,7 +109,8 @@ internal class RecordsViewModel @Inject constructor(
                 sortOrder = SortOrder.DateAsc,
                 records = records.map { it.toRecordListItem(context) },
                 showDeletedRecordsButton = deletedRecordsCount > 0,
-                deletedRecordsCount = deletedRecordsCount
+                deletedRecordsCount = deletedRecordsCount,
+                showRecordPlaybackPanel = audioPlayer.isPlaying() || audioPlayer.isPaused()
             )
         }
     }
@@ -328,6 +355,7 @@ internal data class RecordsScreenState(
     val sortOrder: SortOrder = SortOrder.DateAsc,
     val bookmarksSelected: Boolean = false,
     val showDeletedRecordsButton: Boolean = false,
+    val showRecordPlaybackPanel: Boolean = false,
     val deletedRecordsCount: Int = 0,
 
     val showRenameDialog: Boolean = false,
