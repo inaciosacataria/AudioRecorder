@@ -187,7 +187,7 @@ class HomeViewModel @Inject constructor(
                         widthScale = calculateScale(activeRecord.durationMills, defaultWidthScale = 1.5f),
                         durationMills = activeRecord.durationMills,
                         playProgressMills = 0L,
-                        waveformData = adjustWaveformHeights(activeRecord.amps, 100),
+                        waveformData = adjustWaveformHeights(activeRecord.amps),
                         durationSample = activeRecord.amps.size,
                         gridStepMills = calculateGridStep(activeRecord.durationMills)
                     ),

@@ -256,6 +256,7 @@ private fun drawWaveform(
             viewState.drawLinesArray[i] = 0f
         }
         val half = size.height / 2
+        val textIndent = viewState.textIndent
         var step = 0
         for (index in 0 until viewState.durationPx.toInt()) {
             var sampleIndex = (index * viewState.samplePerPx).toInt()
@@ -265,9 +266,9 @@ private fun drawWaveform(
             val xPos = viewState.waveformShiftPx + index
             if (xPos >= 0 && xPos <= size.width && step + 3 < viewState.drawLinesArray.size) {
                 viewState.drawLinesArray[step] = xPos
-                viewState.drawLinesArray[step + 1] = (half + state.waveformData[sampleIndex] + 1)
+                viewState.drawLinesArray[step + 1] = (half + state.waveformData[sampleIndex]*(half-textIndent)/1000 + 1)
                 viewState.drawLinesArray[step + 2] = xPos
-                viewState.drawLinesArray[step + 3] = (half - state.waveformData[sampleIndex] - 1)
+                viewState.drawLinesArray[step + 3] = (half - state.waveformData[sampleIndex]*(half-textIndent)/1000 - 1)
                 step += 4
             }
         }

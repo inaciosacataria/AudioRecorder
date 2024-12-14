@@ -134,7 +134,7 @@ internal fun HomeScreen(
             WaveformComposeView(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp),
+                    .height(200.dp),
                 state = uiState.waveformState,
                 showTimeline = true,
                 onSeekStart = {

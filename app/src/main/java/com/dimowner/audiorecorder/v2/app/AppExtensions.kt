@@ -93,7 +93,7 @@ fun calculateGridStep(durationMills: Long): Long {
  * Called once when a new sound file is added
  */
 @SuppressWarnings("MagicNumber")
-fun adjustWaveformHeights(frameGains: IntArray, halfHeight: Int): IntArray {
+fun adjustWaveformHeights(frameGains: IntArray): IntArray {
     val numFrames = frameGains.size
 
     //Find the highest gain
@@ -147,11 +147,12 @@ fun adjustWaveformHeights(frameGains: IntArray, halfHeight: Int): IntArray {
         if (value > 1.0) value = 1.0f
         heights[i] = value * value
     }
-//    val halfHeight = viewHeightPx / 2 - textIndent.toInt() - 1
+    val scale = 1000f
     val waveformData = IntArray(numFrames)
     for (i in 0 until numFrames) {
-        waveformData[i] = (heights[i] * halfHeight).toInt()
+        waveformData[i] = (heights[i] * scale).toInt()
     }
+    //Array of int values where each value between 0 to 1000
     return waveformData
 }
 

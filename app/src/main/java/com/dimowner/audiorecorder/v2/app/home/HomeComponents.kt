@@ -223,13 +223,13 @@ fun LegacySlider(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val trackHeight = 4.dp
-    val thumbSize = DpSize(20.dp, 20.dp)
+    val thumbSize = DpSize(16.dp, 16.dp)
 
     Slider(
         interactionSource = interactionSource,
         modifier = Modifier
             .requiredSizeIn(minWidth = thumbSize.width, minHeight = trackHeight)
-            .padding(8.dp, 0.dp),
+            .padding(0.dp, 0.dp),
         value = progress,
         onValueChange = { onProgressChange(it) },
         thumb = {
@@ -238,7 +238,7 @@ fun LegacySlider(
                     .shadow(1.dp, CircleShape, clip = false)
                     .indication(
                         interactionSource = interactionSource,
-                        indication = ripple(bounded = false, radius = 20.dp)
+                        indication = ripple(bounded = false, radius = 16.dp)
                     )
             SliderDefaults.Thumb(interactionSource = interactionSource, modifier = modifier)
         },

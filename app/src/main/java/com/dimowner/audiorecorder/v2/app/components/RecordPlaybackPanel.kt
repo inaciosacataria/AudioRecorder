@@ -66,6 +66,7 @@ internal fun RecordPlaybackPanel(
             }
         )
         Row(
+            modifier = Modifier.padding(0.dp, 8.dp, 0.dp, 0.dp),
             verticalAlignment = Alignment.Bottom,
         ) {
             Text(
