@@ -21,7 +21,9 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -41,6 +43,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
@@ -68,9 +71,11 @@ import com.google.gson.Gson
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import kotlin.math.absoluteValue
+import kotlin.math.atan
 import kotlin.math.roundToInt
 
 private const val ANIMATION_DURATION = 500
+private const val MAX_MOVE = 250
 
 @Composable
 internal fun RecordsScreen(
@@ -78,15 +83,17 @@ internal fun RecordsScreen(
     showRecordInfoScreen: (String) -> Unit,
     showDeletedRecordsScreen: () -> Unit,
     uiState: RecordsScreenState,
-    event: RecordsScreenEvent?,
+    recordsEvent: RecordsScreenEvent?,
     onAction: (RecordsScreenAction) -> Unit,
     uiHomeState: HomeScreenState,
     onHomeAction: (HomeScreenAction) -> Unit,
 ) {
+    val density = LocalDensity.current
     // State to keep track of the Card position
     val offsetY = remember { mutableFloatStateOf(0f) }
-
-    val startY = 0f
+    val maxMove = with(density) { MAX_MOVE.dp.toPx() }
+    val k = (maxMove / (Math.PI / 2f)).toFloat()
+    val startY = with(density) { 12.dp.toPx() }
 
     val animatableY = remember { Animatable(startY) }
 
@@ -94,7 +101,6 @@ internal fun RecordsScreen(
     val coroutineScope = rememberCoroutineScope()
 
     // Define a threshold for Y coordinate movement
-    val density = LocalDensity.current
     val playPanelHeight = remember { mutableFloatStateOf(with(density) { 300.dp.toPx() }) }
 
     // Modifier to make the text draggable
@@ -107,16 +113,15 @@ internal fun RecordsScreen(
                 },
                 onDragEnd = {
                     // Animate back to start position
-                    if (offsetY.floatValue.absoluteValue > playPanelHeight.floatValue*0.65) {
+                    if (offsetY.floatValue.absoluteValue > playPanelHeight.floatValue * 0.5) {
                         coroutineScope.launch {
                             animatableY.animateTo(
 //                                TODO:Fix constants!!
-                                playPanelHeight.floatValue*1.5f,
+                                playPanelHeight.floatValue * 1.5f,
                                 animationSpec = tween(durationMillis = ANIMATION_DURATION)
                             )
                             offsetY.floatValue = startY
                             onHomeAction(HomeScreenAction.OnStopClick)
-                            animatableY.snapTo(startY)
                         }
                     } else {
                         coroutineScope.launch {
@@ -128,17 +133,15 @@ internal fun RecordsScreen(
                     }
                 },
                 onDragCancel = {
-                    if (offsetY.floatValue.absoluteValue > playPanelHeight.floatValue*0.65) {
+                    if (offsetY.floatValue.absoluteValue > playPanelHeight.floatValue * 0.5) {
                         coroutineScope.launch {
                             animatableY.animateTo(
-                                playPanelHeight.floatValue*1.5f,
+                                playPanelHeight.floatValue * 1.5f,
                                 animationSpec = tween(durationMillis = ANIMATION_DURATION)
                             )
                             offsetY.floatValue = startY
                             onHomeAction(HomeScreenAction.OnStopClick)
-                            animatableY.snapTo(startY)
                         }
-
                     } else {
                         // Animate back to start position
                         coroutineScope.launch {
@@ -151,7 +154,8 @@ internal fun RecordsScreen(
                 },
                 onDrag = { change, dragAmount ->
                     change.consume()
-                    offsetY.floatValue += dragAmount.y
+                    offsetY.floatValue += change.position.y
+                    offsetY.floatValue = k * atan(offsetY.floatValue / k)
                     coroutineScope.launch {
                         animatableY.snapTo(offsetY.floatValue)
                     }
@@ -173,10 +177,10 @@ internal fun RecordsScreen(
             else -> {}
         }
     }
-    LaunchedEffect(key1 = event) {
-        when (event) {
+    LaunchedEffect(key1 = recordsEvent) {
+        when (recordsEvent) {
             is RecordsScreenEvent.RecordInformationEvent -> {
-                val json = Uri.encode(Gson().toJson(event.recordInfo))
+                val json = Uri.encode(Gson().toJson(recordsEvent.recordInfo))
                 Timber.v("ON EVENT: ShareRecord json = $json")
                 showRecordInfoScreen(json)
             }
@@ -196,123 +200,154 @@ internal fun RecordsScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                RecordsTopBar(
-                    stringResource(id = R.string.records),
-                    uiState.sortOrder.toText(context),
-                    bookmarksSelected = uiState.bookmarksSelected,
-                    onBackPressed = { onPopBackStack() },
-                    onSortItemClick = { order ->
-                          onAction(RecordsScreenAction.UpdateListWithSortOrder(order))
-                    },
-                    onBookmarksClick = { bookmarksSelected ->
-                        onAction(RecordsScreenAction.UpdateListWithBookmarks(bookmarksSelected))
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.BottomStart,
+            ) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    RecordsTopBar(
+                        stringResource(id = R.string.records),
+                        uiState.sortOrder.toText(context),
+                        bookmarksSelected = uiState.bookmarksSelected,
+                        onBackPressed = { onPopBackStack() },
+                        onSortItemClick = { order ->
+                            onAction(RecordsScreenAction.UpdateListWithSortOrder(order))
+                        },
+                        onBookmarksClick = { bookmarksSelected ->
+                            onAction(RecordsScreenAction.UpdateListWithBookmarks(bookmarksSelected))
+                        }
+                    )
+                    if (uiState.showDeletedRecordsButton) {
+                        SettingsItem(stringResource(R.string.trash), R.drawable.ic_delete) {
+                            showDeletedRecordsScreen()
+                        }
                     }
-                )
-                if (uiState.showDeletedRecordsButton) {
-                    SettingsItem(stringResource(R.string.trash), R.drawable.ic_delete) {
-                        showDeletedRecordsScreen()
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                    ) {
+                        items(uiState.records) { record ->
+                            RecordListItemView(
+                                name = record.name,
+                                details = record.details,
+                                duration = record.duration,
+                                isBookmarked = record.isBookmarked,
+                                onClickItem = {
+                                    //Reset Play panel position
+                                    coroutineScope.launch { animatableY.snapTo(startY) }
+                                    onAction(RecordsScreenAction.OnItemSelect(record.recordId))
+                                },
+                                onClickBookmark = { isBookmarked ->
+                                    onAction(
+                                        RecordsScreenAction.BookmarkRecord(
+                                            record.recordId,
+                                            isBookmarked
+                                        )
+                                    )
+                                },
+                                onClickMenu = {
+                                    when (it) {
+                                        RecordDropDownMenuItemId.SHARE -> {
+                                            onAction(RecordsScreenAction.ShareRecord(record.recordId))
+                                        }
+
+                                        RecordDropDownMenuItemId.INFORMATION -> {
+                                            onAction(RecordsScreenAction.ShowRecordInfo(record.recordId))
+                                        }
+
+                                        RecordDropDownMenuItemId.RENAME -> {
+                                            onAction(
+                                                RecordsScreenAction.OnRenameRecordRequest(
+                                                    record
+                                                )
+                                            )
+                                        }
+
+                                        RecordDropDownMenuItemId.OPEN_WITH -> {
+                                            onAction(
+                                                RecordsScreenAction.OpenRecordWithAnotherApp(
+                                                    record.recordId
+                                                )
+                                            )
+                                        }
+
+                                        RecordDropDownMenuItemId.SAVE_AS -> {
+                                            onAction(RecordsScreenAction.OnSaveAsRequest(record))
+                                        }
+
+                                        RecordDropDownMenuItemId.DELETE -> {
+                                            onAction(
+                                                RecordsScreenAction.OnMoveToRecycleRecordRequest(
+                                                    record
+                                                )
+                                            )
+                                        }
+                                    }
+                                },
+                            )
+                        }
                     }
-                }
-                LazyColumn(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                ) {
-                    items(uiState.records) { record ->
-                        RecordListItemView(
-                            name = record.name,
-                            details = record.details,
-                            duration = record.duration,
-                            isBookmarked = record.isBookmarked,
-                            onClickItem = {
-                                onAction(RecordsScreenAction.OnItemSelect(record.recordId))
-                            },
-                            onClickBookmark = { isBookmarked ->
-                                onAction(RecordsScreenAction.BookmarkRecord(record.recordId, isBookmarked))
-                            },
-                            onClickMenu = {
-                                when (it) {
-                                    RecordDropDownMenuItemId.SHARE -> {
-                                        onAction(RecordsScreenAction.ShareRecord(record.recordId))
-                                    }
-                                    RecordDropDownMenuItemId.INFORMATION -> {
-                                        onAction(RecordsScreenAction.ShowRecordInfo(record.recordId))
-                                    }
-
-                                    RecordDropDownMenuItemId.RENAME -> {
-                                        onAction(RecordsScreenAction.OnRenameRecordRequest(record))
-                                    }
-
-                                    RecordDropDownMenuItemId.OPEN_WITH -> {
-                                        onAction(RecordsScreenAction.OpenRecordWithAnotherApp(record.recordId))
-                                    }
-
-                                    RecordDropDownMenuItemId.SAVE_AS -> {
-                                        onAction(RecordsScreenAction.OnSaveAsRequest(record))
-                                    }
-
-                                    RecordDropDownMenuItemId.DELETE -> {
-                                        onAction(RecordsScreenAction.OnMoveToRecycleRecordRequest(record))
-                                    }
-                                }
-                            },
-                        )
+                    if (uiState.showMoveToRecycleDialog) {
+                        uiState.selectedRecord?.let { record ->
+                            DeleteDialog(record.name, onAcceptClick = {
+                                onAction(RecordsScreenAction.MoveRecordToRecycle(record.recordId))
+                            }, onDismissClick = {
+                                onAction(RecordsScreenAction.OnMoveToRecycleRecordDismiss)
+                            })
+                        }
+                    } else if (uiState.showSaveAsDialog) {
+                        uiState.selectedRecord?.let { record ->
+                            SaveAsDialog(record.name, onAcceptClick = {
+                                onAction(RecordsScreenAction.SaveRecordAs(record.recordId))
+                            }, onDismissClick = {
+                                onAction(RecordsScreenAction.OnSaveAsDismiss)
+                            })
+                        }
+                    } else if (uiState.showRenameDialog) {
+                        uiState.selectedRecord?.let { record ->
+                            RenameAlertDialog(record.name, onAcceptClick = {
+                                onAction(RecordsScreenAction.RenameRecord(record.recordId, it))
+                            }, onDismissClick = {
+                                onAction(RecordsScreenAction.OnRenameRecordDismiss)
+                            })
+                        }
                     }
                 }
 
                 AnimatedVisibility(
                     visible = uiState.showRecordPlaybackPanel,
                     enter = slideInVertically(initialOffsetY = { it }),
+                    exit = slideOutVertically(targetOffsetY = { it })
                 ) {
                     Card(
-                        modifier = modifier.wrapContentSize()
+                        modifier = modifier
+                            .wrapContentSize()
                             .onSizeChanged {
                                 playPanelHeight.floatValue = it.height.toFloat()
-                            }
+                            },
                     ) {
                         RecordPlaybackPanel(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .wrapContentHeight(),
                             uiState = uiHomeState,
-                            onProgressChange = { onHomeAction(HomeScreenAction.OnProgressBarStateChange(it)) },
+                            onProgressChange = {
+                                onHomeAction(
+                                    HomeScreenAction.OnProgressBarStateChange(
+                                        it
+                                    )
+                                )
+                            },
                             onSeekStart = { onHomeAction(HomeScreenAction.OnSeekStart) },
                             onSeekProgress = { onHomeAction(HomeScreenAction.OnSeekProgress(it)) },
                             onSeekEnd = { onHomeAction(HomeScreenAction.OnSeekEnd(it)) },
                             onPlayClick = { onHomeAction(HomeScreenAction.OnPlayClick) },
                             onStopClick = {
                                 coroutineScope.launch {
-                                    animatableY.animateTo(600f, animationSpec = tween(durationMillis = 500))
-                                    offsetY.floatValue = startY
                                     onHomeAction(HomeScreenAction.OnStopClick)
                                 }
                             },
                             onPauseClick = { onHomeAction(HomeScreenAction.OnPauseClick) },
                         )
-                    }
-                }
-                if (uiState.showMoveToRecycleDialog) {
-                    uiState.selectedRecord?.let { record ->
-                        DeleteDialog(record.name, onAcceptClick = {
-                            onAction(RecordsScreenAction.MoveRecordToRecycle(record.recordId))
-                        }, onDismissClick = {
-                            onAction(RecordsScreenAction.OnMoveToRecycleRecordDismiss)
-                        })
-                    }
-                } else if (uiState.showSaveAsDialog) {
-                    uiState.selectedRecord?.let { record ->
-                        SaveAsDialog(record.name, onAcceptClick = {
-                            onAction(RecordsScreenAction.SaveRecordAs(record.recordId))
-                        }, onDismissClick = {
-                            onAction(RecordsScreenAction.OnSaveAsDismiss)
-                        })
-                    }
-                } else if (uiState.showRenameDialog) {
-                    uiState.selectedRecord?.let { record ->
-                        RenameAlertDialog(record.name, onAcceptClick = {
-                            onAction(RecordsScreenAction.RenameRecord(record.recordId, it))
-                        }, onDismissClick = {
-                            onAction(RecordsScreenAction.OnRenameRecordDismiss)
-                        })
                     }
                 }
             }

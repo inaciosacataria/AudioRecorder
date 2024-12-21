@@ -44,7 +44,7 @@ internal fun RecordPlaybackPanel(
     ) {
         Text(
             modifier = Modifier
-                .wrapContentSize().padding(8.dp),
+                .wrapContentSize().padding(12.dp),
             textAlign = TextAlign.Center,
             text = uiState.time,
             color = MaterialTheme.colorScheme.onSurface,
@@ -52,7 +52,7 @@ internal fun RecordPlaybackPanel(
             fontWeight = FontWeight.Bold
         )
         WaveformComposeView(
-            modifier = Modifier.fillMaxWidth().height(70.dp),
+            modifier = Modifier.fillMaxWidth().height(48.dp),
             state = uiState.waveformState,
             showTimeline = false,
             onSeekStart = {
@@ -86,7 +86,7 @@ internal fun RecordPlaybackPanel(
                 textAlign = TextAlign.Center,
                 text = uiState.recordName,
                 color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 20.sp,
+                fontSize = 18.sp,
                 fontWeight = FontWeight.Normal
             )
             Text(
@@ -112,7 +112,7 @@ internal fun RecordPlaybackPanel(
             onStopClick = { onStopClick() },
             onPauseClick = { onPauseClick() }
         )
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }
 
