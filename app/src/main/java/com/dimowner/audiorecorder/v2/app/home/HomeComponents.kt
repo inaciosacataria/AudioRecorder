@@ -220,6 +220,7 @@ fun LegacySlider(
     //Progress is value between 0 - 1f
     progress: Float = 0f,
     onProgressChange: (Float) -> Unit,
+    enabled: Boolean = true,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val trackHeight = 4.dp
@@ -231,6 +232,7 @@ fun LegacySlider(
             .requiredSizeIn(minWidth = thumbSize.width, minHeight = trackHeight)
             .padding(0.dp, 0.dp),
         value = progress,
+        enabled = enabled,
         onValueChange = { onProgressChange(it) },
         thumb = {
             val modifier = Modifier
@@ -382,6 +384,7 @@ fun TimePanel(
     timeStart: String,
     timeEnd: String,
     progress: Float,
+    isSliderEnabled: Boolean,
     onRenameClick: () -> Unit,
     onProgressChange: (Float) -> Unit
 ) {
@@ -397,7 +400,7 @@ fun TimePanel(
             textAlign = TextAlign.Center,
             text = recordDuration,
             color = MaterialTheme.colorScheme.onSurface,
-            fontSize = 54.sp,
+            fontSize = 60.sp,
             fontWeight = FontWeight.Bold
         )
         Text(
@@ -446,6 +449,7 @@ fun TimePanel(
         LegacySlider(
             progress = progress,
             onProgressChange = onProgressChange,
+            enabled = isSliderEnabled
         )
     }
 }
@@ -461,6 +465,7 @@ fun TimePanelPreview() {
         "00:00",
         "05:32",
         0.3f,
+        isSliderEnabled = true,
         onRenameClick = {},
         onProgressChange = { prgress ->},
     )

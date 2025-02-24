@@ -17,42 +17,34 @@
 package com.dimowner.audiorecorder.v2.app.records
 
 import android.net.Uri
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import com.dimowner.audiorecorder.R
 import com.dimowner.audiorecorder.v2.app.ComposableLifecycle
@@ -61,7 +53,7 @@ import com.dimowner.audiorecorder.v2.app.RenameAlertDialog
 import com.dimowner.audiorecorder.v2.app.SaveAsDialog
 import com.dimowner.audiorecorder.v2.app.calculateGridStep
 import com.dimowner.audiorecorder.v2.app.calculateScale
-import com.dimowner.audiorecorder.v2.app.components.RecordPlaybackPanel
+import com.dimowner.audiorecorder.v2.app.components.TouchPanel
 import com.dimowner.audiorecorder.v2.app.components.WaveformState
 import com.dimowner.audiorecorder.v2.app.home.HomeScreenAction
 import com.dimowner.audiorecorder.v2.app.home.HomeScreenState
@@ -70,9 +62,6 @@ import com.dimowner.audiorecorder.v2.app.settings.SettingsItem
 import com.google.gson.Gson
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import kotlin.math.absoluteValue
-import kotlin.math.atan
-import kotlin.math.roundToInt
 
 private const val ANIMATION_DURATION = 500
 private const val MAX_MOVE = 250
@@ -88,80 +77,80 @@ internal fun RecordsScreen(
     uiHomeState: HomeScreenState,
     onHomeAction: (HomeScreenAction) -> Unit,
 ) {
-    val density = LocalDensity.current
-    // State to keep track of the Card position
-    val offsetY = remember { mutableFloatStateOf(0f) }
-    val maxMove = with(density) { MAX_MOVE.dp.toPx() }
-    val k = (maxMove / (Math.PI / 2f)).toFloat()
-    val startY = with(density) { 12.dp.toPx() }
-
-    val animatableY = remember { Animatable(startY) }
-
+//    val density = LocalDensity.current
+//    // State to keep track of the Card position
+//    val offsetY = remember { mutableFloatStateOf(0f) }
+//    val maxMove = with(density) { MAX_MOVE.dp.toPx() }
+//    val k = (maxMove / (Math.PI / 2f)).toFloat()
+//    val startY = with(density) { 12.dp.toPx() }
+//
+//    val animatableY = remember { Animatable(startY) }
+//
     // Get a CoroutineScope tied to the Composable
     val coroutineScope = rememberCoroutineScope()
-
-    // Define a threshold for Y coordinate movement
-    val playPanelHeight = remember { mutableFloatStateOf(with(density) { 300.dp.toPx() }) }
-
-    // Modifier to make the text draggable
-    val modifier = Modifier
-        .offset { IntOffset(0, animatableY.value.roundToInt()) }
-        .pointerInput(Unit) {
-            detectDragGestures(
-                onDragStart = {
-                    offsetY.floatValue = startY
-                },
-                onDragEnd = {
-                    // Animate back to start position
-                    if (offsetY.floatValue.absoluteValue > playPanelHeight.floatValue * 0.5) {
-                        coroutineScope.launch {
-                            animatableY.animateTo(
-//                                TODO:Fix constants!!
-                                playPanelHeight.floatValue * 1.5f,
-                                animationSpec = tween(durationMillis = ANIMATION_DURATION)
-                            )
-                            offsetY.floatValue = startY
-                            onHomeAction(HomeScreenAction.OnStopClick)
-                        }
-                    } else {
-                        coroutineScope.launch {
-                            animatableY.animateTo(
-                                startY,
-                                animationSpec = tween(durationMillis = ANIMATION_DURATION)
-                            )
-                        }
-                    }
-                },
-                onDragCancel = {
-                    if (offsetY.floatValue.absoluteValue > playPanelHeight.floatValue * 0.5) {
-                        coroutineScope.launch {
-                            animatableY.animateTo(
-                                playPanelHeight.floatValue * 1.5f,
-                                animationSpec = tween(durationMillis = ANIMATION_DURATION)
-                            )
-                            offsetY.floatValue = startY
-                            onHomeAction(HomeScreenAction.OnStopClick)
-                        }
-                    } else {
-                        // Animate back to start position
-                        coroutineScope.launch {
-                            animatableY.animateTo(
-                                startY,
-                                animationSpec = tween(durationMillis = ANIMATION_DURATION)
-                            )
-                        }
-                    }
-                },
-                onDrag = { change, dragAmount ->
-                    change.consume()
-                    offsetY.floatValue += change.position.y
-                    offsetY.floatValue = k * atan(offsetY.floatValue / k)
-                    coroutineScope.launch {
-                        animatableY.snapTo(offsetY.floatValue)
-                    }
-                }
-            )
-        }
+//
+//    // Define a threshold for Y coordinate movement
+//    val playPanelHeight = remember { mutableFloatStateOf(with(density) { 300.dp.toPx() }) }
+//
+//    // Modifier to make the text draggable
+//    val modifier = Modifier
+//        .offset { IntOffset(0, animatableY.value.roundToInt()) }
+//        .pointerInput(Unit) {
+//            detectDragGestures(
+//                onDragStart = {
+//                    offsetY.floatValue = startY
+//                },
+//                onDragEnd = {
+//                    // Animate back to start position
+//                    if (offsetY.floatValue.absoluteValue > playPanelHeight.floatValue * 0.5) {
+//                        coroutineScope.launch {
+//                            animatableY.animateTo(
+////                                TODO:Fix constants!!
+//                                playPanelHeight.floatValue * 1.5f,
+//                                animationSpec = tween(durationMillis = ANIMATION_DURATION)
+//                            )
+//                            offsetY.floatValue = startY
+//                            onHomeAction(HomeScreenAction.OnStopClick)
+//                        }
+//                    } else {
+//                        coroutineScope.launch {
+//                            animatableY.animateTo(
+//                                startY,
+//                                animationSpec = tween(durationMillis = ANIMATION_DURATION)
+//                            )
+//                        }
+//                    }
+//                },
+//                onDragCancel = {
+//                    if (offsetY.floatValue.absoluteValue > playPanelHeight.floatValue * 0.5) {
+//                        coroutineScope.launch {
+//                            animatableY.animateTo(
+//                                playPanelHeight.floatValue * 1.5f,
+//                                animationSpec = tween(durationMillis = ANIMATION_DURATION)
+//                            )
+//                            offsetY.floatValue = startY
+//                            onHomeAction(HomeScreenAction.OnStopClick)
+//                        }
+//                    } else {
+//                        // Animate back to start position
+//                        coroutineScope.launch {
+//                            animatableY.animateTo(
+//                                startY,
+//                                animationSpec = tween(durationMillis = ANIMATION_DURATION)
+//                            )
+//                        }
+//                    }
+//                },
+//                onDrag = { change, dragAmount ->
+//                    change.consume()
+//                    offsetY.floatValue += change.position.y
+//                    offsetY.floatValue = k * atan(offsetY.floatValue / k)
+//                    coroutineScope.launch {
+//                        animatableY.snapTo(offsetY.floatValue)
+//                    }
+//                }
+//            )
+//        }
 
     val context = LocalContext.current
 
@@ -170,9 +159,10 @@ internal fun RecordsScreen(
     ComposableLifecycle { _, event ->
         when (event) {
             Lifecycle.Event.ON_START -> {
-                Timber.d("SettingsScreen: On Start")
-                onAction(RecordsScreenAction.InitRecordsScreen)
-                onHomeAction(HomeScreenAction.InitHomeScreen)
+                Timber.d("RecordsScreen: On Start")
+                onAction(RecordsScreenAction.InitRecordsScreen(
+                    showPlayPanel = uiHomeState.waveformState.playProgressMills > 0)
+                )
             }
             else -> {}
         }
@@ -204,6 +194,33 @@ internal fun RecordsScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.BottomStart,
             ) {
+                if (uiState.isShowProgress) {
+                    //Show nothing because of progress takes very short period of time
+                } else if (uiState.records.isEmpty()) {
+                    Column(
+                        modifier = Modifier.wrapContentSize()
+                            .align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Image(
+                            modifier = Modifier.wrapContentSize(),
+                            painter = painterResource(id = R.drawable.ic_audiotrack_64),
+                            contentDescription = "Image Description",
+                            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
+                        )
+                        Text(
+                            modifier = Modifier.wrapContentSize(),
+                            text = if (uiState.bookmarksSelected) {
+                                stringResource(R.string.no_bookmarks)
+                            } else {
+                                stringResource(R.string.no_records)
+                            },
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Normal
+                        )
+                    }
+                }
                 Column(modifier = Modifier.fillMaxSize()) {
                     RecordsTopBar(
                         stringResource(id = R.string.records),
@@ -233,8 +250,10 @@ internal fun RecordsScreen(
                                 isBookmarked = record.isBookmarked,
                                 onClickItem = {
                                     //Reset Play panel position
-                                    coroutineScope.launch { animatableY.snapTo(startY) }
+//                                    coroutineScope.launch { animatableY.snapTo(startY) }
                                     onAction(RecordsScreenAction.OnItemSelect(record.recordId))
+                                    onHomeAction(HomeScreenAction.InitHomeScreen)
+                                    onHomeAction(HomeScreenAction.OnPlayClick)
                                 },
                                 onClickBookmark = { isBookmarked ->
                                     onAction(
@@ -312,44 +331,64 @@ internal fun RecordsScreen(
                         }
                     }
                 }
-
-                AnimatedVisibility(
-                    visible = uiState.showRecordPlaybackPanel,
-                    enter = slideInVertically(initialOffsetY = { it }),
-                    exit = slideOutVertically(targetOffsetY = { it })
-                ) {
-                    Card(
-                        modifier = modifier
-                            .wrapContentSize()
-                            .onSizeChanged {
-                                playPanelHeight.floatValue = it.height.toFloat()
-                            },
-                    ) {
-                        RecordPlaybackPanel(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .wrapContentHeight(),
-                            uiState = uiHomeState,
-                            onProgressChange = {
-                                onHomeAction(
-                                    HomeScreenAction.OnProgressBarStateChange(
-                                        it
-                                    )
-                                )
-                            },
-                            onSeekStart = { onHomeAction(HomeScreenAction.OnSeekStart) },
-                            onSeekProgress = { onHomeAction(HomeScreenAction.OnSeekProgress(it)) },
-                            onSeekEnd = { onHomeAction(HomeScreenAction.OnSeekEnd(it)) },
-                            onPlayClick = { onHomeAction(HomeScreenAction.OnPlayClick) },
-                            onStopClick = {
-                                coroutineScope.launch {
-                                    onHomeAction(HomeScreenAction.OnStopClick)
-                                }
-                            },
-                            onPauseClick = { onHomeAction(HomeScreenAction.OnPauseClick) },
+                TouchPanel(
+                    showRecordPlaybackPanel = uiState.showRecordPlaybackPanel,
+                    uiHomeState = uiHomeState,
+                    onProgressChange = {
+                        onHomeAction(
+                            HomeScreenAction.OnProgressBarStateChange(
+                                it
+                            )
                         )
-                    }
-                }
+                    },
+                    onSeekStart = { onHomeAction(HomeScreenAction.OnSeekStart) },
+                    onSeekProgress = { onHomeAction(HomeScreenAction.OnSeekProgress(it)) },
+                    onSeekEnd = { onHomeAction(HomeScreenAction.OnSeekEnd(it)) },
+                    onPlayClick = { onHomeAction(HomeScreenAction.OnPlayClick) },
+                    onStopClick = {
+                        coroutineScope.launch {
+                            onHomeAction(HomeScreenAction.OnStopClick)
+                        }
+                    },
+                    onPauseClick = { onHomeAction(HomeScreenAction.OnPauseClick) },
+                )
+//                AnimatedVisibility(
+//                    visible = uiState.showRecordPlaybackPanel,
+//                    enter = slideInVertically(initialOffsetY = { it }),
+//                    exit = slideOutVertically(targetOffsetY = { it })
+//                ) {
+//                    Card(
+//                        modifier = modifier
+//                            .wrapContentSize()
+//                            .onSizeChanged {
+//                                playPanelHeight.floatValue = it.height.toFloat()
+//                            },
+//                    ) {
+//                        RecordPlaybackPanel(
+//                            modifier = Modifier
+//                                .fillMaxWidth()
+//                                .wrapContentHeight(),
+//                            uiState = uiHomeState,
+//                            onProgressChange = {
+//                                onHomeAction(
+//                                    HomeScreenAction.OnProgressBarStateChange(
+//                                        it
+//                                    )
+//                                )
+//                            },
+//                            onSeekStart = { onHomeAction(HomeScreenAction.OnSeekStart) },
+//                            onSeekProgress = { onHomeAction(HomeScreenAction.OnSeekProgress(it)) },
+//                            onSeekEnd = { onHomeAction(HomeScreenAction.OnSeekEnd(it)) },
+//                            onPlayClick = { onHomeAction(HomeScreenAction.OnPlayClick) },
+//                            onStopClick = {
+//                                coroutineScope.launch {
+//                                    onHomeAction(HomeScreenAction.OnStopClick)
+//                                }
+//                            },
+//                            onPauseClick = { onHomeAction(HomeScreenAction.OnPauseClick) },
+//                        )
+//                    }
+//                }
             }
         }
     }
@@ -408,6 +447,29 @@ fun RecordsScreenPreview() {
             isContextMenuAvailable = true,
             isStopRecordingButtonAvailable = true,
         ),
+        onHomeAction = {}
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun RecordsScreenEmptyPreview() {
+    RecordsScreen({}, {}, {},
+        RecordsScreenState(),
+        null, {},
+        uiHomeState = HomeScreenState(),
+        onHomeAction = {}
+    )
+}
+
+
+@Preview(showBackground = true)
+@Composable
+fun RecordsScreenLoadingPreview() {
+    RecordsScreen({}, {}, {},
+        RecordsScreenState(isShowProgress = true),
+        null, {},
+        uiHomeState = HomeScreenState(),
         onHomeAction = {}
     )
 }

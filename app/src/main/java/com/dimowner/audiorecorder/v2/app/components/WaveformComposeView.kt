@@ -135,7 +135,6 @@ fun WaveformComposeView(
                         waveformShiftPx = shift
                     )
                     onSeekProgress(((-shift + half) * viewState.value.millsPerPx).toLong())
-                    Timber.v("onDrag shift: $shift change: $change amount: $dragAmount")
                 },
                 onDragEnd = {
                     val shift = viewState.value.waveformShiftPx.toInt()

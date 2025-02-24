@@ -88,12 +88,6 @@ fun RecorderNavigationGraph(
         }
         composable(Routes.RECORDS_SCREEN) {
             val recordsViewModel: RecordsViewModel = hiltViewModel()
-            recordsViewModel.onNewRecordSelected = {
-                coroutineScope.launch {
-                    homeViewModel.init()
-                    homeViewModel.handlePlayClick()
-                }
-            }
             RecordsScreen(
                 onPopBackStack = {
                     navController.popBackStack()
@@ -104,7 +98,9 @@ fun RecorderNavigationGraph(
                     navController.navigate(Routes.DELETED_RECORDS_SCREEN)
                 }, uiState = recordsViewModel.state.value,
                 recordsEvent = recordsViewModel.event.collectAsState(null).value,
-                onAction = { recordsViewModel.onAction(it) },
+                onAction = {
+                    recordsViewModel.onAction(it)
+                },
                 uiHomeState = homeViewModel.state.value,
                 onHomeAction = { homeViewModel.onAction(it) }
             )

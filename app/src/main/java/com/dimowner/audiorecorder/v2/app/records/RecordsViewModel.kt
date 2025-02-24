@@ -57,17 +57,16 @@ internal class RecordsViewModel @Inject constructor(
     @ApplicationContext context: Context,
 ) : AndroidViewModel(context as Application) {
 
-    var onNewRecordSelected: (() -> Unit)? = null
-
     private val _state = mutableStateOf(RecordsScreenState())
     val state: State<RecordsScreenState> = _state
 
     private val _event = MutableSharedFlow<RecordsScreenEvent?>()
     val event: SharedFlow<RecordsScreenEvent?> = _event
 
-    fun init() {
+    fun init(showPlayPanel: Boolean) {
+        showLoading(true)
         viewModelScope.launch(ioDispatcher) {
-            initState()
+            initState(showPlayPanel)
         }
         audioPlayer.addPlayerCallback(object : PlayerCallback {
             override fun onStartPlay() {
@@ -95,7 +94,7 @@ internal class RecordsViewModel @Inject constructor(
         })
     }
 
-    private suspend fun initState() {
+    private suspend fun initState(showPlayPanel: Boolean) {
         val context: Context = getApplication<Application>().applicationContext
         val records = recordsDataSource.getRecords(
             sortOrder = state.value.sortOrder,
@@ -110,8 +109,9 @@ internal class RecordsViewModel @Inject constructor(
                 records = records.map { it.toRecordListItem(context) },
                 showDeletedRecordsButton = deletedRecordsCount > 0,
                 deletedRecordsCount = deletedRecordsCount,
-                showRecordPlaybackPanel = audioPlayer.isPlaying() || audioPlayer.isPaused()
+                showRecordPlaybackPanel = showPlayPanel,
             )
+            showLoading(false)
         }
     }
 
@@ -159,7 +159,6 @@ internal class RecordsViewModel @Inject constructor(
     fun onItemSelect(recordId: Long) {
         audioPlayer.stop()
         prefs.activeRecordId = recordId
-        onNewRecordSelected?.invoke()
     }
 
     fun updateListWithSortOrder(sortOrderId: SortDropDownMenuItemId) {
@@ -321,9 +320,13 @@ internal class RecordsViewModel @Inject constructor(
         }
     }
 
+    private fun showLoading(value: Boolean) {
+        _state.value = _state.value.copy(isShowProgress = value)
+    }
+
     fun onAction(action: RecordsScreenAction) {
         when (action) {
-            RecordsScreenAction.InitRecordsScreen -> init()
+            is RecordsScreenAction.InitRecordsScreen -> init(action.showPlayPanel)
             is RecordsScreenAction.UpdateListWithSortOrder -> updateListWithSortOrder(action.sortOrderId)
             is RecordsScreenAction.UpdateListWithBookmarks -> updateListWithBookmarks(action.bookmarksSelected)
             is RecordsScreenAction.BookmarkRecord -> bookmarkRecord(action.recordId, action.addToBookmarks)
@@ -350,13 +353,14 @@ internal class RecordsViewModel @Inject constructor(
     }
 }
 
-internal data class RecordsScreenState(
+data class RecordsScreenState(
     val records: List<RecordListItem> = emptyList(),
-    val sortOrder: SortOrder = SortOrder.DateAsc,
+    val sortOrder: SortOrder = SortOrder.DateDesc,
     val bookmarksSelected: Boolean = false,
     val showDeletedRecordsButton: Boolean = false,
     val showRecordPlaybackPanel: Boolean = false,
     val deletedRecordsCount: Int = 0,
+    val isShowProgress: Boolean = false,
 
     val showRenameDialog: Boolean = false,
     val showMoveToRecycleDialog: Boolean = false,
@@ -364,7 +368,7 @@ internal data class RecordsScreenState(
     val selectedRecord: RecordListItem? = null,
 )
 
-internal data class RecordListItem(
+data class RecordListItem(
     val recordId: Long,
     val name: String,
     val details: String,
@@ -377,7 +381,7 @@ internal sealed class RecordsScreenEvent {
 }
 
 internal sealed class RecordsScreenAction {
-    data object InitRecordsScreen : RecordsScreenAction()
+    data class InitRecordsScreen(val showPlayPanel: Boolean) : RecordsScreenAction()
     data class UpdateListWithSortOrder(val sortOrderId: SortDropDownMenuItemId) : RecordsScreenAction()
     data class UpdateListWithBookmarks(val bookmarksSelected: Boolean) : RecordsScreenAction()
     data class OnItemSelect(val recordId: Long) : RecordsScreenAction()

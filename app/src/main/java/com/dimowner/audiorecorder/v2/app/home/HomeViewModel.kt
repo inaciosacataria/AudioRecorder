@@ -121,72 +121,73 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    suspend fun init() {
-        withContext(ioDispatcher) {
-            updateState()
-            audioPlayer.addPlayerCallback(callback = object : PlayerContractNew.PlayerCallback {
-                override fun onStartPlay() {
+    fun init() {
+        showProgress(true)
+        viewModelScope.launch(ioDispatcher) {
+            updateState(false)
+        }
+        audioPlayer.addPlayerCallback(callback = object : PlayerContractNew.PlayerCallback {
+            override fun onStartPlay() {
+                _state.value = _state.value.copy(
+                    showPause = true,
+                    showStop = true,
+                )
+            }
+
+            override fun onPlayProgress(mills: Long) {
+                if (!_state.value.isSeek) {
                     _state.value = _state.value.copy(
+                        waveformState = _state.value.waveformState.copy(
+                            playProgressMills = mills
+                        ),
+                        progress = mills / _state.value.waveformState.durationMills.toFloat(),
+                        time = TimeUtils.formatTimeIntervalHourMinSec2(mills),
                         showPause = true,
                         showStop = true,
                     )
                 }
+            }
 
-                override fun onPlayProgress(mills: Long) {
-                    if (!_state.value.isSeek) {
-                        _state.value = _state.value.copy(
-                            waveformState = _state.value.waveformState.copy(
-                                playProgressMills = mills
-                            ),
-                            progress = mills / _state.value.waveformState.durationMills.toFloat(),
-                            time = TimeUtils.formatTimeIntervalHourMinSec2(mills),
-                            showPause = true,
-                            showStop = true,
-                        )
-                    }
-                }
+            override fun onPausePlay() {
+                _state.value = _state.value.copy(
+                    showPause = false,
+                    showStop = true
+                )
+            }
 
-                override fun onPausePlay() {
-                    _state.value = _state.value.copy(
-                        showPause = false,
-                        showStop = true
-                    )
-                }
+            override fun onSeek(mills: Long) {
+                //Do nothing
+            }
 
-                override fun onSeek(mills: Long) {
-                    //Do nothing
-                }
+            override fun onStopPlay() {
+                _state.value = _state.value.copy(
+                    showPause = false,
+                    showStop = false
+                )
+                moveToStart()
+            }
 
-                override fun onStopPlay() {
-                    _state.value = _state.value.copy(
-                        showPause = false,
-                        showStop = false
-                    )
-                    moveToStart()
-                }
-
-                override fun onError(throwable: AppException) {
-                    Timber.e(throwable)
-                    //TODO: Show error to user
-                }
-            })
-        }
+            override fun onError(throwable: AppException) {
+                Timber.e(throwable)
+                //TODO: Show error to user
+            }
+        })
 
         val context: Context = getApplication<Application>().applicationContext
         val intent = Intent(context, DecodeService::class.java)
         context.bindService(intent, connection, Context.BIND_AUTO_CREATE)
     }
 
-    private suspend fun updateState() {
+    private suspend fun updateState(resetPlayProgress: Boolean = true) {
         val context: Context = getApplication<Application>().applicationContext
         val activeRecord = recordsDataSource.getActiveRecord()
         if (activeRecord != null) {
             withContext(mainDispatcher) {
                 _state.value = _state.value.copy(
-                    waveformState = WaveformState(
+                    waveformState = _state.value.waveformState.copy(
                         widthScale = calculateScale(activeRecord.durationMills, defaultWidthScale = 1.5f),
                         durationMills = activeRecord.durationMills,
-                        playProgressMills = 0L,
+                        playProgressMills = if (resetPlayProgress) 0L else _state.value.waveformState.playProgressMills,
                         waveformData = adjustWaveformHeights(activeRecord.amps),
                         durationSample = activeRecord.amps.size,
                         gridStepMills = calculateGridStep(activeRecord.durationMills)
@@ -196,8 +197,10 @@ class HomeViewModel @Inject constructor(
                     time = context.getString(R.string.zero_time),
                     recordName = activeRecord.name,
                     recordInfo = activeRecord.toInfoCombinedText(context),
-                    isContextMenuAvailable = true
+                    isContextMenuAvailable = true,
+                    isShowWaveform = true,
                 )
+                showProgress(false)
             }
         } else {
             withContext(mainDispatcher) {
@@ -209,6 +212,7 @@ class HomeViewModel @Inject constructor(
     @SuppressLint("Recycle")
     fun importAudioFile(uri: Uri) {
         val context: Context = getApplication<Application>().applicationContext
+        showProgress(true)
         viewModelScope.launch(ioDispatcher) {
             try {
                 val parcelFileDescriptor: ParcelFileDescriptor? =
@@ -298,11 +302,12 @@ class HomeViewModel @Inject constructor(
     }
 
     fun renameActiveRecord(newName: String) {
+        showProgress(true)
         viewModelScope.launch(ioDispatcher) {
             val activeRecord = recordsDataSource.getActiveRecord()
             if (activeRecord != null) {
                 recordsDataSource.renameRecord(activeRecord, newName)
-                updateState()
+                updateState(false)
             }
         }
     }
@@ -336,6 +341,7 @@ class HomeViewModel @Inject constructor(
 
     fun deleteActiveRecord() {
         audioPlayer.stop()
+        showProgress(true)
         viewModelScope.launch(ioDispatcher) {
             val recordId = prefs.activeRecordId
             if (recordId != -1L && recordsDataSource.moveRecordToRecycle(recordId)) {
@@ -432,9 +438,13 @@ class HomeViewModel @Inject constructor(
         moveAnimator.start()
     }
 
+    fun showProgress(value: Boolean) {
+        _state.value = _state.value.copy(isShowProgress = value)
+    }
+
     fun onAction(action: HomeScreenAction) {
         when (action) {
-            HomeScreenAction.InitHomeScreen -> viewModelScope.launch { init() }
+            HomeScreenAction.InitHomeScreen -> init()
             is HomeScreenAction.ImportAudioFile -> importAudioFile(action.uri)
             HomeScreenAction.ShareActiveRecord -> shareActiveRecord()
             HomeScreenAction.ShowActiveRecordInfo -> showActiveRecordInfo()
@@ -463,11 +473,13 @@ data class HomeScreenState(
     val waveformState: WaveformState = WaveformState(),
     val startTime: String = "",
     val endTime: String = "",
-    val time: String = "",
+    val time: String = TimeUtils.formatTimeIntervalHourMinSec2(0),
     //Progress is value between 0 - 1f
     val progress: Float = 0f,
     val recordName: String = "",
     val recordInfo: String = "",
+    val isShowWaveform: Boolean = false,
+    val isShowProgress: Boolean = false,
     val isContextMenuAvailable: Boolean = false,
     val isStopRecordingButtonAvailable: Boolean = false,
     val showPause: Boolean = false,

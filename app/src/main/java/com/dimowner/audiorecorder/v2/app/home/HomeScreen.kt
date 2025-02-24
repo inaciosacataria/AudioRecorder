@@ -19,6 +19,7 @@ package com.dimowner.audiorecorder.v2.app.home
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,15 +27,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
+import com.dimowner.audiorecorder.R
 import com.dimowner.audiorecorder.v2.app.ComposableLifecycle
 import com.dimowner.audiorecorder.v2.app.DeleteDialog
 import com.dimowner.audiorecorder.v2.app.RenameAlertDialog
@@ -59,7 +66,7 @@ internal fun HomeScreen(
     ComposableLifecycle { _, event ->
         when (event) {
             Lifecycle.Event.ON_START -> {
-                Timber.d("SettingsScreen: On Start")
+                Timber.d("HomeScreen: On Start")
                 onAction(HomeScreenAction.InitHomeScreen)
             }
             else -> {}
@@ -99,7 +106,10 @@ internal fun HomeScreen(
     Surface(
         modifier = Modifier.fillMaxSize()
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
             TopAppBar(
                 onImportClick = {
                     launcher.launch("audio/*")
@@ -131,30 +141,44 @@ internal fun HomeScreen(
             Spacer(modifier = Modifier
                 .weight(1f)
                 .wrapContentHeight())
-            WaveformComposeView(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp),
-                state = uiState.waveformState,
-                showTimeline = true,
-                onSeekStart = {
-                    onAction(HomeScreenAction.OnSeekStart)
-                },
-                onSeekProgress = { mills ->
-                    onAction(HomeScreenAction.OnSeekProgress(mills))
-                },
-                onSeekEnd = { mills ->
-                    onAction(HomeScreenAction.OnSeekEnd(mills))
-                }
-            )
-            PlayPanel(
-                modifier = Modifier.wrapContentHeight().fillMaxWidth().padding(8.dp, 8.dp),
-                showPause = uiState.showPause,
-                showStop = uiState.showStop,
-                onPlayClick = { onAction(HomeScreenAction.OnPlayClick) },
-                onStopClick = { onAction(HomeScreenAction.OnStopClick) },
-                onPauseClick = { onAction(HomeScreenAction.OnPauseClick) }
-            )
+            if (uiState.isShowProgress) {
+                //Show nothing because of progress takes very short period of time
+            } else if (uiState.isShowWaveform) {
+                WaveformComposeView(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+                    state = uiState.waveformState,
+                    showTimeline = true,
+                    onSeekStart = {
+                        onAction(HomeScreenAction.OnSeekStart)
+                    },
+                    onSeekProgress = { mills ->
+                        onAction(HomeScreenAction.OnSeekProgress(mills))
+                    },
+                    onSeekEnd = { mills ->
+                        onAction(HomeScreenAction.OnSeekEnd(mills))
+                    }
+                )
+                PlayPanel(
+                    modifier = Modifier
+                        .wrapContentHeight()
+                        .fillMaxWidth()
+                        .padding(8.dp, 8.dp),
+                    showPause = uiState.showPause,
+                    showStop = uiState.showStop,
+                    onPlayClick = { onAction(HomeScreenAction.OnPlayClick) },
+                    onStopClick = { onAction(HomeScreenAction.OnStopClick) },
+                    onPauseClick = { onAction(HomeScreenAction.OnPauseClick) }
+                )
+            } else {
+                Image(
+                    painter = painterResource(id = R.drawable.waveform),
+                    contentDescription = "Image Description",
+                    modifier = Modifier.wrapContentSize(),
+                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
+                )
+            }
             Spacer(modifier = Modifier
                 .weight(1f)
                 .wrapContentHeight())
@@ -165,6 +189,7 @@ internal fun HomeScreen(
                 uiState.startTime,
                 uiState.endTime,
                 uiState.progress,
+                uiState.isShowWaveform,
                 onRenameClick = {},
                 onProgressChange = { onAction(HomeScreenAction.OnProgressBarStateChange(it))}
             )
@@ -228,5 +253,20 @@ fun HomeScreenPreview() {
         recordInfo = "1.5 MB, mp4, 192 kbps, 48 kHz",
         isContextMenuAvailable = true,
         isStopRecordingButtonAvailable = true,
+        isShowWaveform = true,
+    ), null, {})
+}
+
+@Preview
+@Composable
+fun HomeScreenEmptyPreview() {
+    HomeScreen({}, {}, {}, uiState = HomeScreenState(), null, {})
+}
+
+@Preview
+@Composable
+fun HomeScreenShowProgressPreview() {
+    HomeScreen({}, {}, {}, uiState = HomeScreenState(
+        isShowProgress = true
     ), null, {})
 }
