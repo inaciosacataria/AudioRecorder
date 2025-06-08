@@ -48,6 +48,7 @@ import com.dimowner.audiorecorder.app.widget.SettingView;
 import com.dimowner.audiorecorder.util.AndroidUtils;
 import com.dimowner.audiorecorder.util.FileUtil;
 import com.dimowner.audiorecorder.util.RippleUtils;
+import com.dimowner.audiorecorder.v2.app.HomeActivity;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -83,7 +84,7 @@ public class SettingsActivity extends Activity implements SettingsContract.View,
 	private SettingView channelsSetting;
 	private Button btnReset;
 
-	private SettingsContract.UserActionsListener presenter;
+    private SettingsContract.UserActionsListener presenter;
 	private ColorMap colorMap;
 	private ColorMap.OnThemeColorChangeListener onThemeColorChangeListener;
 	private final CompoundButton.OnCheckedChangeListener publicDirListener = new CompoundButton.OnCheckedChangeListener() {
@@ -130,6 +131,8 @@ public class SettingsActivity extends Activity implements SettingsContract.View,
 		btnView.setOnClickListener(this);
 		btnReset = findViewById(R.id.btnReset);
 		btnReset.setOnClickListener(this);
+		LinearLayout pnlTry = findViewById(R.id.tryPanel);
+		pnlTry.setOnClickListener(this);
 		txtSizePerMin = findViewById(R.id.txt_size_per_min);
 		txtInformation = findViewById(R.id.txt_information);
 		txtLocation = findViewById(R.id.txt_records_location);
@@ -217,6 +220,12 @@ public class SettingsActivity extends Activity implements SettingsContract.View,
 
 		LinearLayout pnlInfo = findViewById(R.id.info_panel);
 		pnlInfo.setBackground(
+				RippleUtils.createShape(
+						ContextCompat.getColor(getApplicationContext(),R.color.white_transparent_88),
+						getResources().getDimension(R.dimen.spacing_normal)
+				)
+		);
+		pnlTry.setBackground(
 				RippleUtils.createShape(
 						ContextCompat.getColor(getApplicationContext(),R.color.white_transparent_88),
 						getResources().getDimension(R.dimen.spacing_normal)
@@ -345,9 +354,17 @@ public class SettingsActivity extends Activity implements SettingsContract.View,
 		} else if (id == R.id.btnReset) {
 			presenter.resetSettings();
 			presenter.loadSettings();
+		} else if (id == R.id.tryPanel) {
+			presenter.switchAppV2();
 		} else if (id == R.id.btnRequest) {
 			requestFeature();
 		}
+	}
+
+	public void showAppV2() {
+		Intent intent = new Intent(this, HomeActivity.class);
+		startActivity(intent);
+		finish();
 	}
 
 	@Override
@@ -588,6 +605,20 @@ public class SettingsActivity extends Activity implements SettingsContract.View,
 		sampleRateSetting.setEnabled(false);
 		bitrateSetting.setEnabled(false);
 		channelsSetting.setEnabled(false);
+	}
+
+	@Override
+	public void showAppV2Confirmation() {
+		AndroidUtils.showDialogConfirmation(
+				SettingsActivity.this,
+				R.drawable.ic_info,
+				getString(R.string.try_new_audio_recorder),
+				getString(R.string.audio_recorder_updated_with_improved_features_message),
+				view -> {
+					presenter.confirmSwitchAppV2();
+					showAppV2();
+				}
+		);
 	}
 
 	@Override

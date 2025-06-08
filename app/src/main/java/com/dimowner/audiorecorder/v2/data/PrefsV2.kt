@@ -40,6 +40,7 @@ interface PrefsV2 {
 
     var isDynamicTheme: Boolean
     var isDarkTheme: Boolean
+    var isAppV2: Boolean
 
     var settingNamingFormat: NameFormat
     var settingRecordingFormat: RecordingFormat

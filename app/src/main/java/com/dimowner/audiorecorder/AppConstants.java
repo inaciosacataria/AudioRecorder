@@ -35,6 +35,9 @@ public class AppConstants {
 
 	public static final int PENDING_INTENT_FLAGS;
 
+	public static final String PREF_NAME = "com.dimowner.audiorecorder.data.PrefsImpl";
+	public static final String PREF_KEY_IS_APP_V2 = "pref_is_app_v2";
+
 	public static final String REQUESTS_RECEIVER = "dmitriy.ponomarenko.ua@gmail.com";
 
 	public static final String APPLICATION_NAME = "AudioRecorder";

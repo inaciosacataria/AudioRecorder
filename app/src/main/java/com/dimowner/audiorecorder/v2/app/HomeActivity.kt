@@ -16,14 +16,16 @@
 
 package com.dimowner.audiorecorder.v2.app
 
+import android.content.Intent
 import android.os.Build
-import androidx.activity.ComponentActivity
 import android.os.Bundle
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
+import com.dimowner.audiorecorder.app.main.MainActivity
 import com.dimowner.audiorecorder.v2.app.home.HomeViewModel
 import com.dimowner.audiorecorder.v2.navigation.RecorderNavigationGraph
 import com.dimowner.audiorecorder.v2.theme.AppTheme
@@ -51,6 +53,10 @@ class HomeActivity: ComponentActivity() {
     fun RecorderApp(
         coroutineScope: CoroutineScope
     ) {
-        RecorderNavigationGraph(coroutineScope, viewModel)
+        RecorderNavigationGraph(coroutineScope, viewModel, onSwitchToLegacyApp = {
+            val intent = Intent(this, MainActivity::class.java)
+            startActivity(intent)
+            finish()
+        })
     }
 }

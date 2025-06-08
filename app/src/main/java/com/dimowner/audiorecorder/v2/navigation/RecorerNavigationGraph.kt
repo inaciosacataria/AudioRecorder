@@ -28,53 +28,29 @@ import com.dimowner.audiorecorder.v2.app.info.RecordInfoScreen
 import com.dimowner.audiorecorder.v2.app.records.RecordsScreen
 import com.dimowner.audiorecorder.v2.app.records.RecordsViewModel
 import com.dimowner.audiorecorder.v2.app.settings.SettingsScreen
+import com.dimowner.audiorecorder.v2.app.settings.SettingsScreenAction
 import com.dimowner.audiorecorder.v2.app.settings.SettingsViewModel
 import com.dimowner.audiorecorder.v2.app.settings.WelcomeSetupSettingsScreen
 import com.dimowner.audiorecorder.v2.app.welcome.WelcomeScreen
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 
 private const val ANIMATION_DURATION = 120
 
 @Composable
 fun RecorderNavigationGraph(
     coroutineScope: CoroutineScope,
-    homeViewModel: HomeViewModel
+    homeViewModel: HomeViewModel,
+    onSwitchToLegacyApp: () -> Unit,
 ) {
     val navController = rememberNavController()
     NavHost(
         navController = navController,
-        startDestination = Routes.COMPOSE_PLAYGROUND_SCREEN,
+        startDestination = Routes.HOME_SCREEN,
         enterTransition = { enterTransition(this) },
         exitTransition = { exitTransition(this) },
         popEnterTransition = { popEnterTransition(this) },
         popExitTransition = { popExitTransition(this) }
     ) {
-        composable(Routes.COMPOSE_PLAYGROUND_SCREEN) {
-            ComposePlaygroundScreen(
-                showDetailsScreen = {
-                    navController.navigate(Routes.DETAILS_SCREEN +"/${it.first}/${it.second}")
-                },
-                showRecordInfoScreen = { json ->
-                    navController.navigate(Routes.RECORD_INFO_SCREEN +"/${json}")
-                },
-                showSettingsScreen = {
-                    navController.navigate(Routes.SETTINGS_SCREEN)
-                },
-                showHomeScreen = {
-                    navController.navigate(Routes.HOME_SCREEN)
-                },
-                showRecordsScreen = {
-                    navController.navigate(Routes.RECORDS_SCREEN)
-                },
-                showWelcomeScreen = {
-                    navController.navigate(Routes.WELCOME_SCREEN)
-                },
-                showDeletedRecordsScreen = {
-                    navController.navigate(Routes.DELETED_RECORDS_SCREEN)
-                }
-            )
-        }
         composable(Routes.HOME_SCREEN) {
             HomeScreen(
                 showRecordsScreen = { navController.navigate(Routes.RECORDS_SCREEN) },
@@ -124,7 +100,12 @@ fun RecorderNavigationGraph(
                 }, showDeletedRecordsScreen = {
                     navController.navigate(Routes.DELETED_RECORDS_SCREEN)
                 }, uiState = settingsViewModel.state.value,
-                onAction = { settingsViewModel.onAction(it) }
+                onAction = {
+                    settingsViewModel.onAction(it)
+                    if (it is SettingsScreenAction.SetAppV2) {
+                        onSwitchToLegacyApp()
+                    }
+                }
             )
         }
         composable("${Routes.DETAILS_SCREEN}/{${Routes.USER_NAME}}/{${Routes.ANIMAL_SELECTED}}",

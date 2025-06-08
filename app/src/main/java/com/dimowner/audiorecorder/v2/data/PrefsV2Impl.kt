@@ -18,6 +18,8 @@ package com.dimowner.audiorecorder.v2.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.dimowner.audiorecorder.AppConstants.PREF_KEY_IS_APP_V2
+import com.dimowner.audiorecorder.AppConstants.PREF_NAME
 import com.dimowner.audiorecorder.v2.DefaultValues
 import com.dimowner.audiorecorder.v2.data.model.BitRate
 import com.dimowner.audiorecorder.v2.data.model.ChannelCount
@@ -34,6 +36,7 @@ import com.dimowner.audiorecorder.v2.data.model.convertToSortOrder
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import androidx.core.content.edit
 
 /**
  * App V2 preferences implementation
@@ -48,9 +51,9 @@ class PrefsV2Impl @Inject internal constructor(@ApplicationContext context: Cont
         get() = sharedPreferences.getBoolean(PREF_KEY_IS_FIRST_RUN, true)
 
     override fun confirmFirstRunExecuted() {
-        val editor = sharedPreferences.edit()
-        editor.putBoolean(PREF_KEY_IS_FIRST_RUN, false) //Set to False, because next app start won't be first
-        editor.apply()
+        sharedPreferences.edit {
+            putBoolean(PREF_KEY_IS_FIRST_RUN, false) //Set to False, because next app start won't be first
+        }
     }
 
     override var askToRenameAfterRecordingStopped: Boolean
@@ -58,32 +61,32 @@ class PrefsV2Impl @Inject internal constructor(@ApplicationContext context: Cont
             PREF_KEY_ASK_TO_RENAME_AFTER_RECORDING_STOPPED, DefaultValues.isAskToRename
         )
         set(value) {
-            val editor = sharedPreferences.edit()
-            editor.putBoolean(PREF_KEY_ASK_TO_RENAME_AFTER_RECORDING_STOPPED, value)
-            editor.apply()
+            sharedPreferences.edit {
+                putBoolean(PREF_KEY_ASK_TO_RENAME_AFTER_RECORDING_STOPPED, value)
+            }
         }
     override var activeRecordId: Long
         get() = sharedPreferences.getLong(PREF_KEY_ACTIVE_RECORD_ID, -1)
         set(value) {
-            val editor = sharedPreferences.edit()
-            editor.putLong(PREF_KEY_ACTIVE_RECORD_ID, value)
-            editor.apply()
+            sharedPreferences.edit {
+                putLong(PREF_KEY_ACTIVE_RECORD_ID, value)
+            }
         }
     override val recordCounter: Long
         get() = sharedPreferences.getLong(PREF_KEY_RECORD_COUNTER, 1)
 
     override fun incrementRecordCounter() {
-        val editor = sharedPreferences.edit()
-        editor.putLong(PREF_KEY_RECORD_COUNTER, recordCounter + 1)
-        editor.apply()
+        sharedPreferences.edit {
+            putLong(PREF_KEY_RECORD_COUNTER, recordCounter + 1)
+        }
     }
 
     override var isKeepScreenOn: Boolean
         get() = sharedPreferences.getBoolean(PREF_KEY_KEEP_SCREEN_ON, DefaultValues.isKeepScreenOn)
         set(value) {
-            val editor = sharedPreferences.edit()
-            editor.putBoolean(PREF_KEY_KEEP_SCREEN_ON, value)
-            editor.apply()
+            sharedPreferences.edit {
+                putBoolean(PREF_KEY_KEEP_SCREEN_ON, value)
+            }
         }
 
     override var recordsSortOrder: SortOrder
@@ -92,25 +95,33 @@ class PrefsV2Impl @Inject internal constructor(@ApplicationContext context: Cont
             SortOrder.DateAsc.toString()
         )?.convertToSortOrder() ?: SortOrder.DateAsc
         set(value) {
-            val editor = sharedPreferences.edit()
-            editor.putString(PREF_KEY_RECORDS_SORT_ORDER, value.toString())
-            editor.apply()
+            sharedPreferences.edit {
+                putString(PREF_KEY_RECORDS_SORT_ORDER, value.toString())
+            }
         }
 
     override var isDynamicTheme: Boolean
         get() = sharedPreferences.getBoolean(PREF_KEY_IS_DYNAMIC_THEME, DefaultValues.isDynamicTheme)
         set(value) {
-            val editor = sharedPreferences.edit()
-            editor.putBoolean(PREF_KEY_IS_DYNAMIC_THEME, value)
-            editor.apply()
+            sharedPreferences.edit {
+                putBoolean(PREF_KEY_IS_DYNAMIC_THEME, value)
+            }
         }
 
     override var isDarkTheme: Boolean
         get() = sharedPreferences.getBoolean(PREF_KEY_IS_DARK_THEME, DefaultValues.isDarkTheme)
         set(value) {
-            val editor = sharedPreferences.edit()
-            editor.putBoolean(PREF_KEY_IS_DARK_THEME, value)
-            editor.apply()
+            sharedPreferences.edit {
+                putBoolean(PREF_KEY_IS_DARK_THEME, value)
+            }
+        }
+
+    override var isAppV2: Boolean
+        get() = sharedPreferences.getBoolean(PREF_KEY_IS_APP_V2, DefaultValues.isAppV2)
+        set(value) {
+            sharedPreferences.edit {
+                putBoolean(PREF_KEY_IS_APP_V2, value)
+            }
         }
 
     override var settingNamingFormat: NameFormat
@@ -119,9 +130,9 @@ class PrefsV2Impl @Inject internal constructor(@ApplicationContext context: Cont
             DefaultValues.DefaultNameFormat.name
         )?.convertToNameFormat() ?: DefaultValues.DefaultNameFormat
         set(value) {
-            val editor = sharedPreferences.edit()
-            editor.putString(PREF_KEY_SETTING_NAMING_FORMAT, value.name)
-            editor.apply()
+            sharedPreferences.edit {
+                putString(PREF_KEY_SETTING_NAMING_FORMAT, value.name)
+            }
         }
 
     override var settingRecordingFormat: RecordingFormat
@@ -130,9 +141,9 @@ class PrefsV2Impl @Inject internal constructor(@ApplicationContext context: Cont
             RecordingFormat.M4a.value
         )?.convertToRecordingFormat() ?: RecordingFormat.M4a
         set(value) {
-            val editor = sharedPreferences.edit()
-            editor.putString(PREF_KEY_SETTING_RECORDING_FORMAT, value.value)
-            editor.apply()
+            sharedPreferences.edit {
+                putString(PREF_KEY_SETTING_RECORDING_FORMAT, value.value)
+            }
         }
 
     override var settingSampleRate: SampleRate
@@ -141,9 +152,9 @@ class PrefsV2Impl @Inject internal constructor(@ApplicationContext context: Cont
             DefaultValues.DefaultSampleRate.value
         ).convertToSampleRate() ?: DefaultValues.DefaultSampleRate
         set(value) {
-            val editor = sharedPreferences.edit()
-            editor.putInt(PREF_KEY_SETTING_SAMPLE_RATE, value.value)
-            editor.apply()
+            sharedPreferences.edit {
+                putInt(PREF_KEY_SETTING_SAMPLE_RATE, value.value)
+            }
         }
 
     override var settingBitrate: BitRate
@@ -152,9 +163,9 @@ class PrefsV2Impl @Inject internal constructor(@ApplicationContext context: Cont
             DefaultValues.DefaultBitRate.value
         ).convertToBitRate() ?: DefaultValues.DefaultBitRate
         set(value) {
-            val editor = sharedPreferences.edit()
-            editor.putInt(PREF_KEY_SETTING_BITRATE, value.value)
-            editor.apply()
+            sharedPreferences.edit {
+                putInt(PREF_KEY_SETTING_BITRATE, value.value)
+            }
         }
 
     override var settingChannelCount: ChannelCount
@@ -163,46 +174,44 @@ class PrefsV2Impl @Inject internal constructor(@ApplicationContext context: Cont
             DefaultValues.DefaultChannelCount.value
         ).convertToChannelCount() ?: DefaultValues.DefaultChannelCount
         set(value) {
-            val editor = sharedPreferences.edit()
-            editor.putInt(PREF_KEY_SETTING_CHANNEL_COUNT, value.value)
-            editor.apply()
+            sharedPreferences.edit {
+                putInt(PREF_KEY_SETTING_CHANNEL_COUNT, value.value)
+            }
         }
 
     override fun resetRecordingSettings() {
-        val editor = sharedPreferences.edit()
-
-        editor.putString(
-            PREF_KEY_SETTING_RECORDING_FORMAT,
-            DefaultValues.DefaultRecordingFormat.value
-        )
-        editor.putInt(
-            PREF_KEY_SETTING_SAMPLE_RATE,
-            DefaultValues.DefaultSampleRate.value
-        )
-        editor.putInt(
-            PREF_KEY_SETTING_BITRATE,
-            DefaultValues.DefaultBitRate.value
-        )
-        editor.putInt(
-            PREF_KEY_SETTING_CHANNEL_COUNT,
-            DefaultValues.DefaultChannelCount.value
-        )
-        editor.apply()
+        sharedPreferences.edit {
+            putString(
+                PREF_KEY_SETTING_RECORDING_FORMAT,
+                DefaultValues.DefaultRecordingFormat.value
+            )
+            putInt(
+                PREF_KEY_SETTING_SAMPLE_RATE,
+                DefaultValues.DefaultSampleRate.value
+            )
+            putInt(
+                PREF_KEY_SETTING_BITRATE,
+                DefaultValues.DefaultBitRate.value
+            )
+            putInt(
+                PREF_KEY_SETTING_CHANNEL_COUNT,
+                DefaultValues.DefaultChannelCount.value
+            )
+        }
     }
 
     override fun fullPreferenceReset() {
-        val editor = sharedPreferences.edit()
-        editor.clear()
-        editor.apply()
+        sharedPreferences.edit {
+            clear()
+        }
     }
 
     companion object {
-        private const val PREF_NAME = "com.dimowner.audiorecorder.data.PrefsV2Impl"
         private const val PREF_KEY_IS_FIRST_RUN = "is_first_run"
         private const val PREF_KEY_ASK_TO_RENAME_AFTER_RECORDING_STOPPED =
             "ask_to_rename_after_recording_stopped"
         private const val PREF_KEY_ACTIVE_RECORD_ID = "active_record_id"
-        private const val PREF_KEY_RECORD_COUNTER = "record_counter"
+        private const val PREF_KEY_RECORD_COUNTER = "record_counter_v2"
         private const val PREF_KEY_KEEP_SCREEN_ON = "keep_screen_on"
         private const val PREF_KEY_RECORDS_SORT_ORDER = "pref_records_sort_order"
         private const val PREF_KEY_IS_DYNAMIC_THEME = "pref_is_dynamic_theme"

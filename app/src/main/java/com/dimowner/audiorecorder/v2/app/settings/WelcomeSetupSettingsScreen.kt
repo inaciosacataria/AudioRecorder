@@ -261,6 +261,7 @@ fun RecordingFormat.toFormatInfo(): String {
 fun WelcomeSetupSettingsScreenPreview() {
     WelcomeSetupSettingsScreen({}, {}, uiState = SettingsState(
         isDynamicColors = true,
+        isAppV2 = false,
         isDarkTheme = false,
         isKeepScreenOn = false,
         isShowRenameDialog = true,

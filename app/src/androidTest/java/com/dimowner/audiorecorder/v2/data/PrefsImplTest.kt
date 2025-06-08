@@ -59,6 +59,7 @@ class PrefsImplTest {
         prefs.confirmFirstRunExecuted()
         prefs.activeRecordId = id
         prefs.isDarkTheme = true
+        prefs.isAppV2 = true
         prefs.settingSampleRate = SampleRate.SR16000
         prefs.settingNamingFormat = NameFormat.DateUs
 
@@ -66,6 +67,7 @@ class PrefsImplTest {
 
         assertEquals(-1, prefs.activeRecordId)
         assertEquals(DefaultValues.isDarkTheme, prefs.isDarkTheme)
+        assertEquals(DefaultValues.isAppV2, prefs.isAppV2)
         assertEquals(DefaultValues.DefaultSampleRate, prefs.settingSampleRate)
         assertEquals(DefaultValues.DefaultNameFormat, prefs.settingNamingFormat)
     }
@@ -132,6 +134,14 @@ class PrefsImplTest {
 
         prefs.isDarkTheme = !DefaultValues.isDarkTheme
         assertEquals(!DefaultValues.isDarkTheme, prefs.isDarkTheme)
+    }
+
+    @Test
+    fun test_isAppV2() {
+        assertEquals(DefaultValues.isAppV2, prefs.isAppV2)
+
+        prefs.isAppV2 = !DefaultValues.isAppV2
+        assertEquals(!DefaultValues.isAppV2, prefs.isAppV2)
     }
 
     @Test

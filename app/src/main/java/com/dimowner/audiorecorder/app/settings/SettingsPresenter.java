@@ -22,6 +22,7 @@ import com.dimowner.audiorecorder.AppConstants;
 import com.dimowner.audiorecorder.BackgroundQueue;
 import com.dimowner.audiorecorder.app.AppRecorder;
 import com.dimowner.audiorecorder.app.AppRecorderCallback;
+import com.dimowner.audiorecorder.audio.player.PlayerContractNew;
 import com.dimowner.audiorecorder.data.FileRepository;
 import com.dimowner.audiorecorder.data.Prefs;
 import com.dimowner.audiorecorder.data.database.LocalRepository;
@@ -50,11 +51,13 @@ public class SettingsPresenter implements SettingsContract.UserActionsListener {
 	private final Prefs prefs;
 	private final SettingsMapper settingsMapper;
 	private final AppRecorder appRecorder;
+	private final PlayerContractNew.Player audioPlayer;
 	private AppRecorderCallback appRecorderCallback;
 
 	public SettingsPresenter(final LocalRepository localRepository, final FileRepository fileRepository,
 									 final BackgroundQueue recordingsTasks, final BackgroundQueue loadingTasks,
-									 final Prefs prefs,  final SettingsMapper settingsMapper,  final AppRecorder appRecorder) {
+									 final Prefs prefs,  final SettingsMapper settingsMapper,  final AppRecorder appRecorder,
+							         final PlayerContractNew.Player audioPlayer) {
 		this.localRepository = localRepository;
 		this.fileRepository = fileRepository;
 		this.recordingsTasks = recordingsTasks;
@@ -62,6 +65,7 @@ public class SettingsPresenter implements SettingsContract.UserActionsListener {
 		this.prefs = prefs;
 		this.settingsMapper = settingsMapper;
 		this.appRecorder = appRecorder;
+		this.audioPlayer = audioPlayer;
 
 		DecimalFormatSymbols formatSymbols = new DecimalFormatSymbols(Locale.getDefault());
 		formatSymbols.setDecimalSeparator('.');
@@ -133,6 +137,20 @@ public class SettingsPresenter implements SettingsContract.UserActionsListener {
 		} else {
 			view.hideRecordsLocation();
 		}
+	}
+
+	@Override
+	public void switchAppV2() {
+		if (view != null) {
+			view.showAppV2Confirmation();
+		}
+	}
+
+	@Override
+	public void confirmSwitchAppV2() {
+		prefs.setAppV2(true);
+        audioPlayer.stop();
+        appRecorder.stopRecording();
 	}
 
 	@Override

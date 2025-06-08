@@ -203,7 +203,7 @@ public class Injector {
 		if (settingsPresenter == null) {
 			settingsPresenter = new SettingsPresenter(provideLocalRepository(context), provideFileRepository(context),
 					provideRecordingTasksQueue(), provideLoadingTasksQueue(), providePrefs(context),
-					provideSettingsMapper(context), provideAppRecorder(context));
+					provideSettingsMapper(context), provideAppRecorder(context), provideAudioPlayer());
 		}
 		return settingsPresenter;
 	}

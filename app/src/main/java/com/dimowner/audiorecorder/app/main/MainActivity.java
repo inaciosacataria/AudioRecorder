@@ -67,6 +67,7 @@ import com.dimowner.audiorecorder.util.AndroidUtils;
 import com.dimowner.audiorecorder.util.AnimationUtil;
 import com.dimowner.audiorecorder.util.FileUtil;
 import com.dimowner.audiorecorder.util.TimeUtils;
+import com.dimowner.audiorecorder.v2.app.HomeActivity;
 
 import java.io.File;
 import java.util.List;
@@ -692,6 +693,13 @@ public class MainActivity extends Activity implements MainContract.View, View.On
 	@Override
 	public void showRecordFileNotAvailable(String path) {
 		AndroidUtils.showRecordFileNotAvailable(this, path);
+	}
+
+	@Override
+	public void showAppV2() {
+		Intent intent = new Intent(this, HomeActivity.class);
+		startActivity(intent);
+		finish();
 	}
 
 	@Override

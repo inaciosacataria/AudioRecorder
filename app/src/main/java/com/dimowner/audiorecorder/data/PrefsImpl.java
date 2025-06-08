@@ -16,6 +16,8 @@
 
 package com.dimowner.audiorecorder.data;
 
+import static com.dimowner.audiorecorder.AppConstants.PREF_KEY_IS_APP_V2;
+import static com.dimowner.audiorecorder.AppConstants.PREF_NAME;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
@@ -26,8 +28,6 @@ import com.dimowner.audiorecorder.AppConstants;
  * App preferences implementation
  */
 public class PrefsImpl implements Prefs {
-
-	private static final String PREF_NAME = "com.dimowner.audiorecorder.data.PrefsImpl";
 
 	private static final String PREF_KEY_IS_FIRST_RUN = "is_first_run";
 	private static final String PREF_KEY_IS_MIGRATED = "is_migrated";
@@ -320,6 +320,18 @@ public class PrefsImpl implements Prefs {
 	public void migrateDb3Finished() {
 		SharedPreferences.Editor editor = sharedPreferences.edit();
 		editor.putBoolean(PREF_KEY_IS_MIGRATED_DB3, true);
+		editor.apply();
+	}
+
+	@Override
+	public boolean isAppV2() {
+		return sharedPreferences.getBoolean(PREF_KEY_IS_APP_V2, true);
+	}
+
+	@Override
+	public void setAppV2(boolean value) {
+		SharedPreferences.Editor editor = sharedPreferences.edit();
+		editor.putBoolean(PREF_KEY_IS_APP_V2, value);
 		editor.apply();
 	}
 

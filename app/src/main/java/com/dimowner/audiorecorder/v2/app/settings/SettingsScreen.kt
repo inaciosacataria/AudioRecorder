@@ -19,20 +19,31 @@ package com.dimowner.audiorecorder.v2.app.settings
 import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import com.dimowner.audiorecorder.R
 import com.dimowner.audiorecorder.v2.app.ComposableLifecycle
@@ -231,9 +242,35 @@ internal fun SettingsScreen(
                         (uiState.availableSpace)
                     )
                 )
-                AppInfoView(uiState.appName, uiState.appVersion)
-                Spacer(modifier = Modifier.size(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Start,
+                        text = stringResource(R.string.switch_to_legacy_app),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Light
+                    )
+                    Button(
+                        modifier = Modifier
+                            .wrapContentSize(),
+                        onClick = {
+                            onAction(SettingsScreenAction.SetAppV2(false))
+                        }
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.btn_apply),
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Light,
+                        )
+                    }
+                }
             }
+            AppInfoView(uiState.appName, uiState.appVersion)
+            Spacer(modifier = Modifier.size(8.dp))
             if (openInfoDialog.value) {
                 SettingsInfoDialog(openInfoDialog, infoText.value)
             }
@@ -250,6 +287,7 @@ fun SettingsScreenPreview() {
     SettingsScreen({}, {}, uiState = SettingsState(
         isDynamicColors = true,
         isDarkTheme = false,
+        isAppV2 = false,
         isKeepScreenOn = false,
         isShowRenameDialog = true,
         nameFormats = listOf(NameFormatItem(NameFormat.Record, "Name text")),

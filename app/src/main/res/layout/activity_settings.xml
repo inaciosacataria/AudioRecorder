@@ -87,6 +87,41 @@
 					android:text="@string/view" />
 		</LinearLayout>
 
+		<LinearLayout
+			android:id="@+id/tryPanel"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:layout_marginStart="@dimen/spacing_small"
+			android:layout_marginEnd="@dimen/spacing_small"
+			android:layout_marginTop="@dimen/spacing_small"
+			android:gravity="center_vertical"
+			android:orientation="horizontal">
+
+			<TextView
+				style="@style/Text.NormalLabel"
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_weight="1"
+				android:text="@string/try_new_audio_recorder"
+				android:layout_marginTop="@dimen/spacing_medium"
+				android:layout_marginBottom="@dimen/spacing_medium"
+				android:layout_marginEnd="@dimen/spacing_normal"
+				android:layout_marginStart="@dimen/spacing_small"
+				android:drawableStart="@drawable/ic_apps"
+				android:drawablePadding="@dimen/spacing_normal"
+				/>
+
+			<ImageView
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:background="?android:selectableItemBackgroundBorderless"
+				android:contentDescription="@null"
+				android:visibility="visible"
+				android:layout_gravity="center_vertical|end"
+				android:padding="@dimen/spacing_xsmall"
+				android:src="@drawable/ic_info"/>
+		</LinearLayout>
+
 		<TextView
 				android:id="@+id/btnTrash"
 				style="@style/Text.NormalLabel"

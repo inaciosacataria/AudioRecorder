@@ -72,6 +72,8 @@ public class SettingsContract {
 
 		void enableAudioSettings();
 		void disableAudioSettings();
+
+		void showAppV2Confirmation();
 	}
 
 	public interface UserActionsListener extends Contract.UserActionsListener<SettingsContract.View> {
@@ -79,6 +81,10 @@ public class SettingsContract {
 		void loadSettings();
 
 		void storeInPublicDir(Context context, boolean b);
+
+		void switchAppV2();
+
+		void confirmSwitchAppV2();
 
 		void keepScreenOn(boolean b);
 

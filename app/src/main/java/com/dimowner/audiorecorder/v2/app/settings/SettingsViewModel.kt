@@ -24,6 +24,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dimowner.audiorecorder.R
+import com.dimowner.audiorecorder.audio.player.PlayerContractNew
 import com.dimowner.audiorecorder.util.AndroidUtils
 import com.dimowner.audiorecorder.v2.DefaultValues
 import com.dimowner.audiorecorder.v2.app.formatBitRate
@@ -53,6 +54,7 @@ import javax.inject.Inject
 internal class SettingsViewModel @Inject constructor(
     private val prefs: PrefsV2,
     private val recordsDataSource: RecordsDataSource,
+    private val audioPlayer: PlayerContractNew.Player,
     @MainDispatcher private val mainDispatcher: CoroutineDispatcher,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     @ApplicationContext context: Context,
@@ -81,6 +83,7 @@ internal class SettingsViewModel @Inject constructor(
         SettingsState(
             isDynamicColors = prefs.isDynamicTheme,
             isDarkTheme = prefs.isDarkTheme,
+            isAppV2 = prefs.isAppV2,
             isKeepScreenOn = prefs.isKeepScreenOn,
             isShowRenameDialog = prefs.askToRenameAfterRecordingStopped,
             selectedNameFormat = prefs.settingNamingFormat.toNameFormatItem(),
@@ -155,12 +158,23 @@ internal class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun handleUseAppV2(value: Boolean) {
+        if (prefs.isAppV2 != value) {
+            prefs.isAppV2 = value
+        }
+        audioPlayer.stop()
+    }
+
     fun setDarkTheme(value: Boolean) {
-        prefs.isDarkTheme = value
+        if (prefs.isDarkTheme != value) {
+            prefs.isDarkTheme = value
+        }
     }
 
     fun setDynamicTheme(value: Boolean) {
-        prefs.isDynamicTheme = value
+        if (prefs.isDynamicTheme != value) {
+            prefs.isDynamicTheme = value
+        }
     }
 
     fun setKeepScreenOn(value: Boolean) {
@@ -351,6 +365,7 @@ internal class SettingsViewModel @Inject constructor(
             is SettingsScreenAction.SelectBitrate -> selectBitrate(action.value)
             is SettingsScreenAction.SelectChannelCount -> selectChannelCount(action.value)
             SettingsScreenAction.ExecuteFirstRun -> executeFirstRun()
+            is SettingsScreenAction.SetAppV2 -> handleUseAppV2(action.value)
         }
     }
 
@@ -386,6 +401,7 @@ internal class SettingsViewModel @Inject constructor(
 
 internal sealed class SettingsScreenAction {
     data object InitSettingsScreen : SettingsScreenAction()
+    data class SetAppV2(val value: Boolean) : SettingsScreenAction()
     data class SetDynamicTheme(val value: Boolean) : SettingsScreenAction()
     data class SetDarkTheme(val value: Boolean) : SettingsScreenAction()
     data class SetKeepScreenOn(val value: Boolean) : SettingsScreenAction()

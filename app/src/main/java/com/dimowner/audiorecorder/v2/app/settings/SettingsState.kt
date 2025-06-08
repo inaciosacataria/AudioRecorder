@@ -28,6 +28,7 @@ import kotlinx.parcelize.Parcelize
 data class SettingsState(
     val isDynamicColors: Boolean,
     val isDarkTheme: Boolean,
+    val isAppV2: Boolean,
     val isKeepScreenOn: Boolean,
     val isShowRenameDialog: Boolean,
     val nameFormats: List<NameFormatItem>,
