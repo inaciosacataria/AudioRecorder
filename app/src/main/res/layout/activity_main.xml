@@ -294,6 +294,7 @@
 				android:clickable="true"
 				android:contentDescription="@string/settings"
 				android:focusable="true"
+			    android:visibility="gone"
 				android:scaleType="centerInside"
 				android:src="@drawable/ic_settings"/>
 
