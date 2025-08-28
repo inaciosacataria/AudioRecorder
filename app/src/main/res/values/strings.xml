@@ -70,6 +70,7 @@
 	<string name="dont_ask_again">Don\'t ask again</string>
 	<string name="open_with">Open with&#8230;</string>
 	<string name="save_as">Save as&#8230;</string>
+	<string name="upload">Upload</string>
 	<string name="downloading">Downloading: %s</string>
 	<plurals name="downloading_success_count">
 		<item quantity="one">%d record copied successfully</item>
@@ -97,6 +98,10 @@
 	<string name="downloading_failed_file_already_exists">Failed to copy. File with name %s already exists</string>
 	<string name="downloading_cancel">Copy canceled</string>
 	<string name="share">Share</string>
+	<string name="uploading">Uploading…</string>
+	<string name="uploading_with_name">Uploading: %s</string>
+	<string name="upload_success">Upload successful</string>
+	<string name="upload_failed">Upload failed</string>
 	<string name="ask_to_rename">Show rename dialog after recording is completed</string>
 	<string name="record_moved_into_trash">The record moved to trash</string>
 	<string name="selected_records_moved_into_trash">Selected records moved to trash</string>

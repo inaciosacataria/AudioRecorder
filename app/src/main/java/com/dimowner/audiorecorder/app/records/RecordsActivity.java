@@ -48,6 +48,7 @@ import com.dimowner.audiorecorder.app.DecodeService;
 import com.dimowner.audiorecorder.app.DownloadService;
 import com.dimowner.audiorecorder.app.PlaybackService;
 import com.dimowner.audiorecorder.app.info.ActivityInformation;
+import com.dimowner.audiorecorder.app.UploadService;
 import com.dimowner.audiorecorder.app.info.RecordInfo;
 import com.dimowner.audiorecorder.app.trash.TrashActivity;
 import com.dimowner.audiorecorder.app.widget.SimpleWaveformView;
@@ -284,6 +285,8 @@ public class RecordsActivity extends Activity implements RecordsContract.View, V
 							item.getPath()
 					);
 				}
+			} else if (menuId == R.id.menu_upload) {
+				UploadService.start(getApplicationContext(), item.getPath());
 			} else if (menuId == R.id.menu_delete) {
 				AndroidUtils.showDialogYesNo(
 						RecordsActivity.this,
